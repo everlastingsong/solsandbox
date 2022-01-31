@@ -1,0 +1,302 @@
+<html>
+<head>
+    <title>Solana Account Finder</title>
+    <meta charset="utf-8" />
+
+    <!--jQuery-->
+    <script>var exports = {};</script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!--@solana/web3.js-->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <script>
+        const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+        // ミントアカウントのアドレスからメタデータアカウントのアドレスを導出
+        async function get_metadata_account_pubkey(mint_account_pubkey) {
+            // 参照: https://github.com/metaplex-foundation/python-api/blob/main/metaplex/metadata.py
+            let seeds = [
+                new TextEncoder().encode("metadata"),
+                METADATA_PROGRAM_ID.toBytes(),
+                mint_account_pubkey.toBytes(),
+            ];
+            let [pubkey, bump] = await solanaWeb3.PublicKey.findProgramAddress(seeds, METADATA_PROGRAM_ID);
+            return pubkey;
+        }
+
+        // ミントアカウントのアドレスから所有者のトークンアカウントのアドレスを特定
+        async function get_nft_owner_token_account_pubkey(clnt, mint_account_pubkey) {
+            let res = await clnt.getTokenLargestAccounts(mint_account_pubkey);
+            return res["value"][0].address; // NFTは1トークンしかないため最大保有者=現在の所有者
+        }
+
+        // トークンアカウントのデータ取得
+        async function get_token_account(clnt, pubkey) {
+            let res = await clnt.getAccountInfo(pubkey);
+            let data_uint8array = res["data"];
+            let data_view = new DataView(data_uint8array.buffer);
+            return {
+                pubkey: pubkey,
+                mint: new solanaWeb3.PublicKey(data_uint8array.slice(0, 32)),
+                owner: new solanaWeb3.PublicKey(data_uint8array.slice(32, 64)),
+                amount: data_view.getBigUint64(64, true),
+            };
+        }
+
+        // ミントアカウントのデータ取得
+        async function get_mint_account(clnt, pubkey) {
+            let res = await clnt.getAccountInfo(pubkey);
+            let data_uint8array = res["data"];
+            let data_view = new DataView(data_uint8array.buffer);
+            return {
+                pubkey: pubkey,
+                mint_authority: new solanaWeb3.PublicKey(data_uint8array.slice(0, 32)),
+                supply: data_view.getBigUint64(32, true),
+                decimals: data_view.getUint8(40),
+            };
+        }
+
+        // メタデータアカウントのデータ取得
+        async function get_metadata_account(clnt, pubkey) {
+            let res = await clnt.getAccountInfo(pubkey);
+            let data_uint8array = res["data"];
+            let data_view = new DataView(data_uint8array.buffer);
+
+            // update_authority, mint, name, symbol, url 切り出し
+            let decoder = new TextDecoder();
+            let offset = 1;
+
+            let update_authority = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32));
+            offset += 32;
+            let mint =  new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32));
+            offset += 32;
+            let name_len = data_view.getUint32(offset, true);
+            offset += 4;
+            let name = decoder.decode(data_uint8array.slice(offset, offset+name_len)).replace(/\0/g, '');
+            offset += name_len;
+            let symbol_len = data_view.getUint32(offset, true);
+            offset += 4;
+            let symbol = decoder.decode(data_uint8array.slice(offset, offset+symbol_len)).replace(/\0/g, '');
+            offset += symbol_len;
+            let url_len = data_view.getUint32(offset, true);
+            offset += 4;
+            let url = decoder.decode(data_uint8array.slice(offset, offset+url_len)).replace(/\0/g, '');
+
+            return {
+                pubkey: pubkey,
+                update_authority: new solanaWeb3.PublicKey(data_uint8array.slice(1, 1+32)),
+                mint: new solanaWeb3.PublicKey(data_uint8array.slice(1+32, 1+32+32)),
+                name: name,
+                symbol: symbol,
+                url: url,
+            };
+        }
+
+        // Client取得 (ネットワーク切り替え)
+        function get_client() {
+            let cluster = $("#cluster").val();
+            return new solanaWeb3.Connection(solanaWeb3.clusterApiUrl(cluster), 'confirmed');
+        }
+
+        // トークンアカウントから他のアカウントを求める
+        async function get_from_token() {
+            try {
+                let clnt = get_client();
+
+                set_wait();
+                let token_account_pubkey = new solanaWeb3.PublicKey($("#input_token").val().trim());
+                let token_account = await get_token_account(clnt, token_account_pubkey);
+
+                let mint_account_pubkey = token_account.mint;
+                let mint_account = await get_mint_account(clnt, mint_account_pubkey);
+
+                let metadata_account_pubkey = await get_metadata_account_pubkey(mint_account_pubkey);
+                let metadata_account = await get_metadata_account(clnt, metadata_account_pubkey);
+                set_account_info(token_account, mint_account, metadata_account);
+            } catch ( e ) {
+                set_error(e);
+            }
+        }
+
+        // ミントアカウントから他のアカウントを求める
+        async function get_from_mint() {
+            try {
+                let clnt = get_client();
+
+                set_wait();
+                let mint_account_pubkey = new solanaWeb3.PublicKey($("#input_mint").val().trim());
+                let mint_account = await get_mint_account(clnt, mint_account_pubkey);
+
+                let metadata_account_pubkey = await get_metadata_account_pubkey(mint_account_pubkey);
+                let metadata_account = await get_metadata_account(clnt, metadata_account_pubkey);
+
+                let token_account_pubkey = await get_nft_owner_token_account_pubkey(clnt, mint_account_pubkey);
+                let token_account = await get_token_account(clnt, token_account_pubkey);
+                set_account_info(token_account, mint_account, metadata_account);
+            } catch ( e ) {
+                set_error(e);
+            }
+        }
+
+        // メタデータアカウントから他のアカウントを求める
+        async function get_from_metadata() {
+            try {
+                let clnt = get_client();
+
+                set_wait();
+                let metadata_account_pubkey = new solanaWeb3.PublicKey($("#input_metadata").val().trim());
+                let metadata_account = await get_metadata_account(clnt, metadata_account_pubkey);
+
+                let mint_account_pubkey = metadata_account.mint;
+                let mint_account = await get_mint_account(clnt, mint_account_pubkey);
+
+                let token_account_pubkey = await get_nft_owner_token_account_pubkey(clnt, mint_account_pubkey);
+                let token_account = await get_token_account(clnt, token_account_pubkey);
+                set_account_info(token_account, mint_account, metadata_account);
+            } catch ( e ) {
+                set_error(e);
+            }
+        }
+
+        async function get_offchain_data() {
+            let url = $("#output_metadata_url").text().trim();
+            if ( url.length == 0 ) return;
+
+            fetch(url)
+            .then(async function(res) {
+                let json = await res.json();
+                let image_url = json.image;
+                set_image_info(image_url);
+            });
+        }
+
+        // 以降は表示操作用
+        function reset() {
+            $('span[id^="output_"]').text("");
+            $('p[id="error"]').text("");
+            reset_image();
+        }
+
+        function set_wait() {
+            $('span[id^="output_"]').text("wait...");
+            $('p[id="error"]').text("");
+            reset_image();
+        }
+
+        function set_error(e) {
+            $('span[id^="output_"]').text("error");
+            $('p[id="error"]').text("Error: " + e);
+        }
+
+        function set_account_info(token, mint, metadata) {
+            $("#output_owner").text(token.owner.toBase58());
+
+            $("#output_token").text(token.pubkey.toBase58());
+            $("#output_token_mint").text(token.mint.toBase58());
+            $("#output_token_owner").text(token.owner.toBase58());
+            $("#output_token_amount").text(token.amount.toString());
+
+            $("#output_mint").text(mint.pubkey.toBase58());
+            $("#output_mint_mint_authority").text(mint.mint_authority.toBase58());
+            $("#output_mint_supply").text(mint.supply.toString());
+            $("#output_mint_decimals").text(mint.decimals);
+
+            $("#output_metadata").text(metadata.pubkey.toBase58());
+            $("#output_metadata_update_authority").text(metadata.update_authority.toBase58());
+            $("#output_metadata_mint").text(metadata.mint.toBase58());
+            $("#output_metadata_symbol").text(metadata.symbol);
+            $("#output_metadata_name").text(metadata.name);
+            $("#output_metadata_url").text(metadata.url);
+        }
+
+        function reset_image() {
+            $("#image_url").text("");
+            $("#image").attr("src", "");
+            $("#image").hide();
+        }
+
+        function set_image_info(image_url) {
+            $("#image_url").text(image_url);
+            $("#image").attr("src", image_url);
+            $("#image").show();
+        }
+    </script>
+</head>
+<body>
+
+<h1>インプット</h1>
+<p>
+    ネットワーク:
+    <select id="cluster">
+        <option selected>devnet</option>
+        <option>mainnet-beta</option>
+    </select>
+</p>
+<p>
+    トークンアカウント:
+    <input type="text" size="60" id="input_token" />
+    <button onclick="get_from_token()">Get From Token Account</button>
+</p>
+<p>
+    ミントアカウント:
+    <input type="text" size="60" id="input_mint" value="4scGGLubwfC5xHJ4u3oh4GFugGJzvRjT3uQUNqFCfV7m" />
+    <button onclick="get_from_mint()">Get From Mint Account</button>
+</p>
+<p>
+    メタデータアカウント:
+    <input type="text" size="60" id="input_metadata" />
+    <button onclick="get_from_metadata()">Get From Metadata Account</button>
+</p>
+<p>
+    <button onclick="reset()">Reset</button>
+</p>
+
+<hr>
+
+<h1>計算したアカウントアドレス</h1>
+<p id="error" style="color: red;"></p>
+<p>
+    システムアカウント(ウォレット・所有者):
+    <span id="output_owner"></span>
+</p>
+<p>
+    トークンアカウント:
+    <span id="output_token"></span>
+    <ul>
+        <li>mint: <span id="output_token_mint"></span></li>
+        <li>owner: <span id="output_token_owner"></span></li>
+        <li>amount: <span id="output_token_amount"></span></li>
+    </ul>
+</p>
+<p>
+    ミントアカウント:
+    <span id="output_mint"></span>
+    <ul>
+        <li>mint_authority: <span id="output_mint_mint_authority"></span></li>
+        <li>supply: <span id="output_mint_supply"></span></li>
+        <li>decimals: <span id="output_mint_decimals"></span></li>
+    </ul>
+</p>
+<p>
+    メタデータアカウント:
+    <span id="output_metadata"></span>
+    <ul>
+        <li>update_authority: <span id="output_metadata_update_authority"></span></li>
+        <li>mint: <span id="output_metadata_mint"></span></li>
+        <li>symbol: <span id="output_metadata_symbol"></span></li>
+        <li>name: <span id="output_metadata_name"></span></li>
+        <li>url: <span id="output_metadata_url"></span></li>
+    </ul>
+</p>
+
+<hr>
+<h1>おまけ</h1>
+<p>メタデータアカウントの url が表示されている時に使えます...</p>
+<p><button onclick="get_offchain_data()">Get Off-Chain Data</button></p>
+<p>
+    イメージURL:
+    <span id="image_url"></span>
+</p>
+<p><img id="image" style="width: 100%; display: none;" /></p>
+</body>
+</html>
