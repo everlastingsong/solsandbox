@@ -48,11 +48,13 @@
             let res = await clnt.getAccountInfo(pubkey);
             let data_uint8array = res["data"];
             let data_view = new DataView(data_uint8array.buffer);
+
+            let coption = data_view.getUint32(0, true);
             return {
                 pubkey: pubkey,
-                mint_authority: new solanaWeb3.PublicKey(data_uint8array.slice(0, 32)),
-                supply: data_view.getBigUint64(32, true),
-                decimals: data_view.getUint8(40),
+                mint_authority: coption == 0 ? null : new solanaWeb3.PublicKey(data_uint8array.slice(4, 4+32)),
+                supply: data_view.getBigUint64(36, true),
+                decimals: data_view.getUint8(44),
             };
         }
 
@@ -197,7 +199,7 @@
             $("#output_token_amount").text(token.amount.toString());
 
             $("#output_mint").text(mint.pubkey.toBase58());
-            $("#output_mint_mint_authority").text(mint.mint_authority.toBase58());
+            $("#output_mint_mint_authority").text(mint.mint_authority === null ? "null" : mint.mint_authority.toBase58());
             $("#output_mint_supply").text(mint.supply.toString());
             $("#output_mint_decimals").text(mint.decimals);
 
