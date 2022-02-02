@@ -1,0 +1,151 @@
+<html>
+<head>
+    <title>Solana Account Finder</title>
+    <meta charset="utf-8" />
+
+    <style type="text/css">
+        #nfts a {
+            padding-left: 5pt;
+            text-decoration: none;
+        }
+    </style>
+
+    <!--jQuery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!--@solana/web3.js-->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <script>
+        const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+        // Client取得 (ネットワーク切り替え)
+        function get_client() {
+            let cluster = $("#cluster").val();
+            return new solanaWeb3.Connection(solanaWeb3.clusterApiUrl(cluster), 'confirmed');
+        }
+
+        // 特定の update_authority を持つメタデータアカウントを取得
+        async function get_metadata_accounts(clnt, update_authority_pubkey) {
+            update_authority_filter = { 
+                memcmp: {
+                    offset: 1,
+                    bytes: update_authority_pubkey.toBase58() }}; // Base58, max 128 bytes
+
+            let config = {
+                dataSlice: { // mint を切り抜く
+                    offset: 1+32,
+                    length: 32 },
+                filters: [
+                    update_authority_filter
+                ]};
+
+            res = await clnt.getProgramAccounts(METADATA_PROGRAM_ID, config);
+            return res;
+        }
+
+        async function find_nft_series() {
+            let input_update_authority_pubkey = new solanaWeb3.PublicKey($("#input_update_authority").val().trim());
+
+            try {
+                let clnt = get_client();
+
+                set_wait();
+                let metadata_accounts = await get_metadata_accounts(clnt, input_update_authority_pubkey);
+                set_list(metadata_accounts);
+            } catch ( e ) {
+                set_error(e);
+            }
+        }
+
+        // 以降は表示操作用
+        function set_wait() {
+            $("#msg").text("wait...");
+            $("#nfts").html("");
+        }
+
+        function set_error(e) {
+            $("#msg").text("");
+            $('p[id="error"]').text("Error: " + e);
+        }
+
+        function set_list(metadata_accounts) {
+            $("#msg").text("NFT count: " + metadata_accounts.length);
+            console.log(metadata_accounts);
+
+            let is_devnet = $("#cluster").val() === "devnet";
+            let html = "";
+            for (let i=0; i<20; i++) {
+                let metadata_account_pubkey = metadata_accounts[i].pubkey;
+                let data = metadata_accounts[i].account.data;
+                let mint_account_pubkey = new solanaWeb3.PublicKey(data);
+
+                let explorer_url = "https://explorer.solana.com/address/"
+                                 + mint_account_pubkey.toBase58()
+                                 + (is_devnet ? "?cluster=devnet" : "");
+
+                html = html
+                     + "<li>"
+                     + " mint: " + mint_account_pubkey.toBase58()
+                     + ` <a href="${explorer_url}" target="_blank">🔍</a>` + "<br>"
+                     + " metadata: " + metadata_account_pubkey.toBase58() + ")</li>";
+            }
+            $("#nfts").html(html);
+        }
+    </script>
+</head>
+<body>
+
+<h1>findProgramAccounts の使い方</h1>
+<p><a href="https://solanacookbook.com/guides/get-program-accounts.html">Solana Cookbook</a> がわかりやすい。</p>
+
+<p>
+アカウントを
+<ol>
+    <li>owner のプログラムID</li>
+    <li>data のサイズ</li>
+    <li>data の特定位置に特定バイト配列が存在すること</li>
+</ol>
+の3つの条件を指定して取得できる。
+</p>
+<p>
+    取得するデータも data の特定のオフセットから特定バイト数だけ切り出せる。
+</p>
+<p>
+NFTの特定のシリーズのメタデータアカウントを探すには、
+<ol>
+    <li>プログラムID が METADATA_PROGRAM_ID(metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s) であること</li>
+    <li>data のサイズ指定はなし</li>
+    <li>data の 4バイト目からの32バイト続きが update_authority の pubkey であること</li>
+</ol>
+で探せばよい。
+</p>
+
+<hr>
+
+<h1>インプット</h1>
+<p>
+    ネットワーク:
+    <select id="cluster">
+        <option selected>devnet</option>
+        <option>mainnet-beta</option>
+    </select>
+</p>
+<p>
+    探すNFTの update_authority :
+    <input type="text" size="60" id="input_update_authority" value="6EsaiJRWuNmHktqGemAaKEoFUd2kA864bcFgiysEEhMi" />
+    <button onclick="find_nft_series()">Find NFT Series</button>
+</p>
+
+<hr>
+
+<h1>NFTのシリーズ</h1>
+<p>見つかったものから最初の20個だけ表示します...</p>
+
+<p id="error" style="color: red;"></p>
+<p id="msg"></p>
+
+<ul id="nfts">
+</ul>
+
+</body>
+</html>
