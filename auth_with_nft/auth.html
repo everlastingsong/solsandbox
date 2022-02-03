@@ -115,7 +115,7 @@
                     let token_account = value[i].account.data.parsed.info;
                     let amount = token_account.tokenAmount;
 
-                    if ( amount.uiAmountString === "1" && amount.decimals == 0 ) {
+                    if ( amount.uiAmountString === "1" && amount.decimals === 0 ) {
                         let mint_account_pubkey = new solanaWeb3.PublicKey(token_account.mint);
                         let metadata_account_pubkey = await get_metadata_account_pubkey(mint_account_pubkey);
                         candidates.push({
@@ -128,11 +128,11 @@
                 console.log(candidates);
 
                 // 2. 候補のメタデータアカウントを一括取得し、update_authorityを持つものを探す
-                metadata_account_pubkeys = [];
+                let metadata_account_pubkeys = [];
                 for (let i=0; i<candidates.length; i++) {
                     metadata_account_pubkeys.push(candidates[i].metadata);
                 }
-                metadata_accounts = await clnt.getMultipleAccountsInfo(metadata_account_pubkeys);
+                let metadata_accounts = await clnt.getMultipleAccountsInfo(metadata_account_pubkeys);
                 console.log(metadata_accounts);
 
                 for (let i=0; i<candidates.length; i++) {
@@ -141,7 +141,7 @@
                     // アカウントのオーナーがMETAPLEXでない場合は無視
                     if ( metadata_accounts[i].owner.toBase58() !== METADATA_PROGRAM_ID.toBase58() ) continue;
                     // パースが失敗する場合は無視
-                    metadata = parse_metadata_account(metadata_accounts[i].data);
+                    let metadata = parse_metadata_account(metadata_accounts[i].data);
                     if ( metadata === null ) continue;
                     // 目的の update_authority でない場合は無視
                     if ( metadata.update_authority.toBase58() !== update_authority_pubkey.toBase58() ) continue;
@@ -264,7 +264,7 @@
 
             let value = parsed_token_accounts.value;
             for (let i=0; i<value.length; i++) {
-                token_account = value[i].account.data.parsed.info;
+                let token_account = value[i].account.data.parsed.info;
                 console.log(token_account.mint, token_account.tokenAmount.uiAmountString);
 
                 let mint = token_account.mint;
