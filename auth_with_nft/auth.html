@@ -1,0 +1,336 @@
+<html>
+<head>
+    <title>Authentication with NFT</title>
+    <meta charset="utf-8" />
+
+    <style type="text/css">
+        .explorer {
+            padding-left: 5pt;
+            text-decoration: none;
+        }
+
+        .verified {
+            background-color: lightgreen;
+        }
+    </style>
+
+    <!--jQuery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!--@solana/web3.js-->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <script>
+        const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+
+        // 自作の認証プログラム
+        const AUTH_WITH_NFT_PROGRAM_ID = new solanaWeb3.PublicKey('7z8YAaW58dXCb4Fo6AyAA5BEHGyBsEN3U6W2G9yVRXKH');
+
+
+        // Client取得 (Devnetのみしか選択できないGUIにしている)
+        function get_client() {
+            let cluster = $("#cluster").val();
+            return new solanaWeb3.Connection(solanaWeb3.clusterApiUrl(cluster), 'confirmed');
+        }
+
+        // ウォレット接続してから f を実行 (接続済みの場合はそのまま f 実行される)
+        async function connect_wallet_then(f) {
+            clear_error();
+            window.solana.connect()
+            .then(async function ({publicKey}) {
+                set_wallet_address(window.solana.publicKey);
+                await f();
+            })
+            .catch(function (e) {
+                set_error(`code: ${e.code} message: ${e.message}`);
+                console.log(e);
+            });
+        }
+
+        // テスト用に都合良いアドレスを返せる余地を作る
+        function get_wallet_pubkey() {
+            return window.solana.publicKey;
+        }
+
+        // ミントアカウントのアドレスからメタデータアカウントのアドレスを導出
+        async function get_metadata_account_pubkey(mint_account_pubkey) {
+            // 参照: https://github.com/metaplex-foundation/python-api/blob/main/metaplex/metadata.py
+            let seeds = [
+                new TextEncoder().encode("metadata"),
+                METADATA_PROGRAM_ID.toBytes(),
+                mint_account_pubkey.toBytes(),
+            ];
+            let [pubkey, bump] = await solanaWeb3.PublicKey.findProgramAddress(seeds, METADATA_PROGRAM_ID);
+            return pubkey;
+        }
+
+        // メタデータアカウントのデータ取得
+        function parse_metadata_account(data_uint8array) {
+            if ( data_uint8array.length < 1+32+32 ) return null;
+ 
+            // update_authority, mint のみ切り出し
+            let update_authority = new solanaWeb3.PublicKey(data_uint8array.slice(1, 1+32));
+            let mint =  new solanaWeb3.PublicKey(data_uint8array.slice(1+32, 1+32+32));
+            return {
+                update_authority: update_authority,
+                mint: mint,
+            };
+        }
+
+        // ウォレット内の残高表示更新
+        async function update_balance() {
+            try {
+                let wallet_pubkey = get_wallet_pubkey();
+                let clnt = get_client();
+
+                clear_error();
+                clear_balance();
+                let parsed_token_accounts = await clnt.getParsedTokenAccountsByOwner(
+                    wallet_pubkey,
+                    { programId: TOKEN_PROGRAM_ID });
+                set_balance(parsed_token_accounts);
+            } catch (e) {
+                set_error(e);
+            }
+        }
+
+        // ウォレット内から update_authority に所属するNFTを探す
+        async function find_from_wallet() {
+            try {
+                let update_authority_pubkey = new solanaWeb3.PublicKey($("#input_update_authority").val().trim());
+                let wallet_pubkey = get_wallet_pubkey();
+                let clnt = get_client();
+
+                clear_error();
+
+                // 1. トークンアカウントを取得し、残高1, decimals=0 のアカウントを候補にする
+                let parsed_token_accounts = await clnt.getParsedTokenAccountsByOwner(
+                    wallet_pubkey,
+                    { programId: TOKEN_PROGRAM_ID });
+
+                let candidates = [];
+                let value = parsed_token_accounts.value;
+                for (let i=0; i<value.length; i++) {
+                    // value.N.account.data.parsed.info.{mint, tokenAmount.{uiAmountString, decimals}}
+                    let token_account = value[i].account.data.parsed.info;
+                    let amount = token_account.tokenAmount;
+
+                    if ( amount.uiAmountString === "1" && amount.decimals == 0 ) {
+                        let mint_account_pubkey = new solanaWeb3.PublicKey(token_account.mint);
+                        let metadata_account_pubkey = await get_metadata_account_pubkey(mint_account_pubkey);
+                        candidates.push({
+                            token: value[i].pubkey,
+                            mint: mint_account_pubkey,
+                            metadata: metadata_account_pubkey
+                        });
+                    }
+                }
+                console.log(candidates);
+
+                // 2. 候補のメタデータアカウントを一括取得し、update_authorityを持つものを探す
+                metadata_account_pubkeys = [];
+                for (let i=0; i<candidates.length; i++) {
+                    metadata_account_pubkeys.push(candidates[i].metadata);
+                }
+                metadata_accounts = await clnt.getMultipleAccountsInfo(metadata_account_pubkeys);
+                console.log(metadata_accounts);
+
+                for (let i=0; i<candidates.length; i++) {
+                    // アカウント自体が存在しない場合は無視
+                    if ( metadata_accounts[i] === null ) continue;
+                    // アカウントのオーナーがMETAPLEXでない場合は無視
+                    if ( ! metadata_accounts[i].owner.toBase58() === METADATA_PROGRAM_ID.toBase58() ) continue;
+                    // パースが失敗する場合は無視
+                    metadata = parse_metadata_account(metadata_accounts[i].data);
+                    if ( metadata === null ) continue;
+                    // 目的の update_authority でない場合は無視
+                    if ( ! metadata.update_authority.toBase58() === update_authority_pubkey.toBase58() ) continue;
+                    // メタデータ内のミントアカウントが想定と異なる場合は無視
+                    if ( ! metadata.mint.toBase58() === candidates[i].mint.toBase58() ) continue;
+
+                    // 正しくメタデータが取得でき、ミントアカウントのアドレスも問題ないので採用する (最初に見つけた1つでよい)
+                    set_account(candidates[i].token, candidates[i].metadata);
+                    return;
+                }
+
+                // 見つからず...
+                set_error("NOT FOUND!")
+            } catch (e) {
+                set_error(e);
+            }
+        }
+
+        //
+        async function send_transaction() {
+            try {
+                let update_authority_pubkey = new solanaWeb3.PublicKey($("#input_update_authority").val().trim());
+                let token_account_pubkey = new solanaWeb3.PublicKey($("#input_token").val().trim());
+                let metadata_account_pubkey = new solanaWeb3.PublicKey($("#input_metadata").val().trim());
+                let wallet_pubkey = get_wallet_pubkey();
+                let clnt = get_client();
+
+                clear_error();
+                clear_tx();
+
+                let instruction = new solanaWeb3.TransactionInstruction({
+                    programId: AUTH_WITH_NFT_PROGRAM_ID,
+                    keys: [
+                        // 4つのアカウントを渡す
+                        { pubkey: wallet_pubkey, isWritable: false, isSigner: true },
+                        { pubkey: update_authority_pubkey, isWritable: false, isSigner: false },
+                        { pubkey: token_account_pubkey, isWritable: false, isSigner: false },
+                        { pubkey: metadata_account_pubkey, isWritable: false, isSigner: false },
+                    ],
+                    data: '',
+                });
+                console.log(AUTH_WITH_NFT_PROGRAM_ID.toBase58());
+
+                let tx = new solanaWeb3.Transaction();
+                tx.recentBlockhash = (await clnt.getRecentBlockhash()).blockhash;
+                tx.feePayer = wallet_pubkey;
+                tx.add(instruction);
+                console.log(tx);
+                
+                // トランザクション実行
+                let signed = await window.solana.signTransaction(tx);
+                console.log("signed", signed);
+                let signature = await clnt.sendRawTransaction(signed.serialize());
+                // signAndSendTransaction はうまくいかないので signTransaction + sendRawTransaction 
+                //const { signature } = await window.solana.signAndSendTransaction(tx);
+
+                set_tx("confirm...", signature, []);
+                await clnt.confirmTransaction(signature);
+
+                // トランザクションログ取得
+                let res = await clnt.getParsedConfirmedTransaction(signature);
+                console.log(res);
+                let logs = res.meta.logMessages;
+                set_tx("confirmed", signature, logs);
+            } catch (e) {
+                set_error(e);
+            }
+        }
+
+        // 以降は表示制御用
+        function set_wallet_address(pubkey) {
+            $("#input_wallet").val(pubkey.toBase58());
+        }
+
+        function clear_tx() {
+            $("#tx").html("");
+        }
+
+        function set_tx(state, signature, logs) {
+            let explorer_url = "https://explorer.solana.com/tx/"
+                             + signature
+                             + "?cluster=devnet";
+
+            let html = state + " " + signature
+                     + ` <a class="explorer" href="${explorer_url}" target="_blank">🔍</a>`
+
+            if ( logs.length > 0 ) {
+                html = html + "<ol>";
+                for (let i=0; i<logs.length; i++) {
+                    let verified = logs[i].match(/VERIFIED/) ? "class='verified'" : "";
+                    html = html + `<li ${verified}>${logs[i]}</li>`;
+                }
+                html = html + "</ol>";
+            }
+
+            $("#tx").html(html);
+        }
+
+        function clear_error() {
+            $("#error").text("");
+        }
+
+        function set_error(e) {
+            $("#error").text("Error: " + e);
+        }
+
+        function set_account(token, metadata) {
+            console.log(token, metadata);
+            $("#input_token").val(token.toBase58());
+            $("#input_metadata").val(metadata.toBase58());
+        }
+
+        function clear_balance() {
+            $("#balance").find("tr").remove();
+        }
+
+        function set_balance(parsed_token_accounts) {
+            // value.N.account.data.parsed.info.{mint, tokenAmount.uiAmountString}
+            console.log(parsed_token_accounts);
+
+            let value = parsed_token_accounts.value;
+            for (let i=0; i<value.length; i++) {
+                token_account = value[i].account.data.parsed.info;
+                console.log(token_account.mint, token_account.tokenAmount.uiAmountString);
+
+                let mint = token_account.mint;
+                let ui_amount = token_account.tokenAmount.uiAmountString;
+                let html = `<tr><td>${token_account.mint}</td><td align="right">${ui_amount}</td></tr>`;
+                $("#balance").append(html);
+            }
+        }
+    </script>
+</head>
+<body>
+
+<h1>特定のシリーズのNFTを所有しているウォレットだと主張する</h1>
+<p style="color: orange; font-weight: bold;">
+    ⚠ボタンを押すとウォレットにアクセスします。Devnetですが注意ください。(省力化のためPhantom前提です)
+</p>
+
+<p id="error" style="color: red;"></p>
+
+<p>
+    ネットワーク:
+    <select id="cluster">
+        <option selected>devnet</option>
+    </select>
+</p>
+<p>
+    プログラムに渡すアカウント1: ウォレットのアドレス (署名者になります)<br />
+    <input type="text" size="60" id="input_wallet" disabled />
+</p>
+<p>
+    プログラムに渡すアカウント2: 所有していると主張するNFTの update authority<br />
+    <input type="text" size="60" id="input_update_authority" value="6EsaiJRWuNmHktqGemAaKEoFUd2kA864bcFgiysEEhMi" />
+</p>
+<p>
+    プログラムに渡すアカウント3: トークンアカウント<br />
+    <input type="text" size="60" id="input_token" />
+</p>
+<p>
+    プログラムに渡すアカウント4: メタデータアカウント<br />
+    <input type="text" size="60" id="input_metadata" />
+</p>
+<p>
+    <button onclick="connect_wallet_then(find_from_wallet)">ウォレット内から探して自動入力</button>
+</p>
+<p>
+    <button onclick="connect_wallet_then(send_transaction)">プログラムにNFTを所有していると主張する</button>
+</p>
+<p>
+    プログラムが主張を認めると、トランザクションが成功します。
+</p>
+
+<p id="tx"></p>
+
+<hr>
+
+<h1>ウォレット内の残高</h1>
+<p>
+    <button onclick="connect_wallet_then(update_balance)">表示更新</button>
+</p>
+
+<table border="1">
+    <thead>
+        <tr><th>ミントアカウント</th><th>残高</th></tr>
+    </thead>
+    <tbody id="balance">
+    </tbody>
+</table>
+</body>
+</html>
