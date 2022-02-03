@@ -139,14 +139,14 @@
                     // アカウント自体が存在しない場合は無視
                     if ( metadata_accounts[i] === null ) continue;
                     // アカウントのオーナーがMETAPLEXでない場合は無視
-                    if ( ! metadata_accounts[i].owner.toBase58() === METADATA_PROGRAM_ID.toBase58() ) continue;
+                    if ( metadata_accounts[i].owner.toBase58() !== METADATA_PROGRAM_ID.toBase58() ) continue;
                     // パースが失敗する場合は無視
                     metadata = parse_metadata_account(metadata_accounts[i].data);
                     if ( metadata === null ) continue;
                     // 目的の update_authority でない場合は無視
-                    if ( ! metadata.update_authority.toBase58() === update_authority_pubkey.toBase58() ) continue;
+                    if ( metadata.update_authority.toBase58() !== update_authority_pubkey.toBase58() ) continue;
                     // メタデータ内のミントアカウントが想定と異なる場合は無視
-                    if ( ! metadata.mint.toBase58() === candidates[i].mint.toBase58() ) continue;
+                    if ( metadata.mint.toBase58() !== candidates[i].mint.toBase58() ) continue;
 
                     // 正しくメタデータが取得でき、ミントアカウントのアドレスも問題ないので採用する (最初に見つけた1つでよい)
                     set_account(candidates[i].token, candidates[i].metadata);
@@ -160,7 +160,7 @@
             }
         }
 
-        //
+        // トランザクション実行
         async function send_transaction() {
             try {
                 let update_authority_pubkey = new solanaWeb3.PublicKey($("#input_update_authority").val().trim());
@@ -196,7 +196,7 @@
                 console.log("signed", signed);
                 let signature = await clnt.sendRawTransaction(signed.serialize());
                 // signAndSendTransaction はうまくいかないので signTransaction + sendRawTransaction 
-                //const { signature } = await window.solana.signAndSendTransaction(tx);
+                // onst { signature } = await window.solana.signAndSendTransaction(tx);
 
                 set_tx("confirm...", signature, []);
                 await clnt.confirmTransaction(signature);
