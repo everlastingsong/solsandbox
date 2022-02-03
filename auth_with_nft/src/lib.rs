@@ -87,7 +87,7 @@ pub fn process_instruction(
     // owner_signer = token.owner AND token.mint = metadata.mint AND metadata.update_authority = update_authority の関係チェック
     msg!("check account relation...");
     if ! token_data.owner.eq(&owner_signer.key) { return Err(ProgramError::InvalidAccountData); }
-    msg!("token.owner = owner_signer OK ({}!", owner_signer.key.to_string());
+    msg!("token.owner = owner_signer OK! ({})", owner_signer.key.to_string());
     if ! token_data.mint.eq(&metadata_data.mint) { return Err(ProgramError::InvalidAccountData); }
     msg!("token.mint = metadata.mint OK! ({})", metadata_data.mint.to_string());
     if ! metadata_data.update_authority.eq(&update_authority.key) { return Err(ProgramError::InvalidAccountData); }
@@ -95,7 +95,7 @@ pub fn process_instruction(
 
     // トークンアカウントの残高チェック
     msg!("check token amount...");
-    if ! token_data.amount == 0 { return Err(ProgramError::InsufficientFunds); }
+    if token_data.amount == 0 { return Err(ProgramError::InsufficientFunds); }
     msg!("check token amount OK! ({})", token_data.amount);
 
     // 成功!
