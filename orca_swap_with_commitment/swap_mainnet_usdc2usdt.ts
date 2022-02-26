@@ -6,7 +6,7 @@ import Decimal from 'decimal.js';
 const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
 
 // code: 403, message: Access forbidden, contact your app developer or support@rpcpool.com.
-// const RPC_ENDPOINT_URL = "https://orca.rpcpool.com ";
+// const RPC_ENDPOINT_URL = "https://orca.rpcpool.com";
 
 // My Wallet: ~/.config/solana/id1.json
 const id_json_path = require('os').homedir() + "/.config/solana/id1.json";
@@ -41,7 +41,7 @@ async function do_swap(connection) {
 }
 
 async function main() {
-    console.log("********************", "MAINNET", "********************")
+    console.log("********************", "MAINNET", "********************");
 
     const commitment = "confirmed";
     const timeout_sec = 60;
