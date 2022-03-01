@@ -131,10 +131,15 @@ main();
 
 /*
 
-# SETUP
-https://solscan.io/tx/2LhX41MHCxrXU23BkaxQXrVoBxeqKy7nQtLL738rdaxVs9FjLm9c91b6AhdPETLDwhXFBqg36hpNpT72vJiBmxwm
+$ ts-node src/swap_mainnet_route_orca_sol_ftt.ts 
+setup...
+setup_txid 4Wv5P8qtDVZGoomwNBUmpoTEU9Hcd73PC577ALa9fF3DtKextGU9ZVLfeZZ2X2kfVvvgjtn36vGWZ6zoHUYsF7b6
+orca to wsol 0.01  to  0.000262823
+wsol to ftt 0.000262823  to  0.000557
+swap...
+swap_txid 2e6Jv1U8MayQH37hD81xuW3YDL13Non9emh6jTn2GYUYte2zUMmbWi5cvMdFaRSpc7kYqEWycMTgnNtTFNyjeVZu
 
-# SWAP
-https://solscan.io/tx/jxkYHJKrxGSSKK1BNzKbHrzoEifT8gJiCVaqcWYqwtyYtQdhtueooEGZUMTF74zNUr7mRuG4vpcZuCT8AJfbGuP
+https://solscan.io/tx/4Wv5P8qtDVZGoomwNBUmpoTEU9Hcd73PC577ALa9fF3DtKextGU9ZVLfeZZ2X2kfVvvgjtn36vGWZ6zoHUYsF7b6
+https://solscan.io/tx/2e6Jv1U8MayQH37hD81xuW3YDL13Non9emh6jTn2GYUYte2zUMmbWi5cvMdFaRSpc7kYqEWycMTgnNtTFNyjeVZu
 
 */
