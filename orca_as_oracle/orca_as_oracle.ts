@@ -20,8 +20,9 @@ async function main() {
     const sol_orca_quote = await orca_sol_pool.getQuote(orca_sol_pool.getTokenA(), orca_amount);
     const sol_per_orca = sol_orca_quote.getExpectedOutputAmount(); // not Minimum
 
-    console.log("USDC/SOL price: ", usdc_per_sol.toNumber());
-    console.log("USDC/ORCA price", sol_per_orca.toNumber()*usdc_per_sol.toNumber());
+    const fee = 0.003; // 0.3%
+    console.log("USDC/SOL price: ", usdc_per_sol.toNumber()/(1-fee));
+    console.log("USDC/ORCA price", sol_per_orca.toNumber()/(1-fee) * usdc_per_sol.toNumber()/(1-fee));
 }
 
 main();
@@ -29,7 +30,7 @@ main();
 /*
 
 $ ts-node src/orca_as_oracle.ts 
-USDC/SOL price:  98.650439
-USDC/ORCA price 2.5064508678972834
+USDC/SOL price:  98.87246840521564
+USDC/ORCA price 2.5195740542685945
 
 */
