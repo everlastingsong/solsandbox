@@ -67,13 +67,19 @@ async function main() {
     orca_token.mint
   );
 
-  const rent_exempt_lamports = await connection.getMinimumBalanceForRentExemption(165 /* len of token account data */);
-  const create_wsol_token_account = createWSOLAccountInstructions(
-    wallet.publicKey,
+  //const rent_exempt_lamports = await connection.getMinimumBalanceForRentExemption(165 /* len of token account data */);
+  //const create_wsol_token_account = createWSOLAccountInstructions(
+  //  wallet.publicKey,
+  //  wsol_token1.mint,
+  //  OrcaU64.fromNumber(0).toU64(),
+  //  rent_exempt_lamports
+  //);
+  const create_wsol_token_account = await resolveOrCreateAssociatedTokenAddress(
+    connection,
+    owner,
     wsol_token1.mint,
-    OrcaU64.fromNumber(0).toU64(),
-    rent_exempt_lamports
-  );
+    OrcaU64.fromNumber(0).toU64()
+  )
   
   const approve_orca_token_account = createApprovalInstruction(
     wallet.publicKey,
