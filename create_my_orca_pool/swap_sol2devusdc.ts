@@ -12,25 +12,20 @@ const RPC_ENDPOINT_URL = "https://api.devnet.solana.com";
 const commitment = 'confirmed';
 const connection = new Connection(RPC_ENDPOINT_URL, commitment);
 
-// ~/.config/solana/id.json の秘密鍵をウォレットとして使う
+// MY WALLET SETTING
 const id_json_path = require('os').homedir() + "/.config/solana/id.json";
 const secret = Uint8Array.from(JSON.parse(require("fs").readFileSync(id_json_path)));
 const wallet = Keypair.fromSecretKey(secret as Uint8Array);
 
 async function main() {
-    // Devnet
-    // const orca = getOrca(connection, Network.DEVNET);
-    // Mainnet
-    // const orca = getOrca(connection);
-    // const orca_sol_pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
+    // MY USDC on DEVNET
+    const devusdc_pubkey = new PublicKey("FMwbjM1stnTzi74LV4cS937jeSUds7mZDgcdgnJ1yBDw");
 
-    // 運営が提供していないものはリストに入っていない
-    // 直接プール実装(OrcaPoolImpl)のオブジェクトを生成する
+    // MY POOL PARAMS
     // https://github.com/orca-so/typescript-sdk/blob/main/src/constants/pools.ts
     // https://github.com/orca-so/typescript-sdk/blob/main/src/model/orca-factory.ts
-    const devusdc_pubkey = new PublicKey("FMwbjM1stnTzi74LV4cS937jeSUds7mZDgcdgnJ1yBDw");
     const sol_devusdc_pool_params: OrcaPoolParams = Object.freeze({
-        // create_devnet_orca_pool.ts で作った情報を入れる
+        // output of create_orca_pool.ts
         address: new PublicKey("3CbxF5jLJux7JwRceWkfLZZME8jFZWenvHwwo3ko2XKg"),
         nonce: 253,
         authority: new PublicKey("22b7ZrVsaY7jrvYeGv5DqbZR5rqYTRFocc97TYAawhjp"),
@@ -44,7 +39,6 @@ async function main() {
             addr: new PublicKey("6QRQnqSUDdgjWSpdXizK2hZ8HKfLiDogDaF1Edkq32Ev"),
           },
           [devusdc_pubkey.toString()]: {
-            // ...で展開されるJSONフィールドを直接入力
             // https://github.com/orca-so/typescript-sdk/blob/main/src/constants/tokens.ts
             tag: "DevUSDC",
             name: "Devnet USD Coin",
@@ -80,7 +74,6 @@ async function main() {
 main();
 
 /*
-Devnetにおける実行記録
 
 sol_token mint So11111111111111111111111111111111111111112 deposit 6QRQnqSUDdgjWSpdXizK2hZ8HKfLiDogDaF1Edkq32Ev
 devusdc_token mint FMwbjM1stnTzi74LV4cS937jeSUds7mZDgcdgnJ1yBDw deposit 3mdEwkuwPEQyEG2qRH23khcb6xDvqfmbtQ4k5VPr27h6
