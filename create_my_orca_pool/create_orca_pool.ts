@@ -5,10 +5,9 @@ import * as assert from 'assert';
 
 const RPC_ENDPOINT_URL = "https://api.devnet.solana.com";
 
-// 定数: https://github.com/orca-so/typescript-sdk/blob/main/src/public/utils/constants.ts
-const ORCA_TOKEN_SWAP_ID = new PublicKey("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP");
+// constants: https://github.com/orca-so/typescript-sdk/blob/main/src/public/utils/constants.ts
 const DEVNET_ORCA_TOKEN_SWAP_ID = new PublicKey("3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U");
-// アカウントサイズは既存のプールから探る: https://github.com/orca-so/typescript-sdk/blob/main/src/constants/pools.ts
+// the size of account is from "solana account" command: https://github.com/orca-so/typescript-sdk/blob/main/src/constants/pools.ts
 // (mainnet) solana account EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U
 // (mainnet) solana account Dqk7mHQBx2ZWExmyrR2S8X6UG75CrbbpK2FSBZsNYsw6
 const ORCA_TOKEN_SWAP_ACCOUNT_LEN = 324;
@@ -16,7 +15,7 @@ const ORCA_TOKEN_SWAP_ACCOUNT_LEN = 324;
 const commitment = 'confirmed';
 const connection = new Connection(RPC_ENDPOINT_URL, commitment);
 
-// ~/.config/solana/id.json の秘密鍵をウォレットとして使う
+// MY WALLET SETTING
 const id_json_path = require('os').homedir() + "/.config/solana/id.json";
 const secret = Uint8Array.from(JSON.parse(require("fs").readFileSync(id_json_path)));
 const wallet = Keypair.fromSecretKey(secret as Uint8Array);
@@ -28,32 +27,14 @@ interface FeeStructure {
     owner_fee_denominator: number,
 }
 
-// PDA の seeds が address のみか検証 (検証が終わったので実行しなくてもOK)
-async function verify_pda_seeds() {
-    // Devnet の ORCA/SOL のプールの address と authority の関係を確認
-    const devnet_orca_sol_pool_address = new PublicKey("B4v9urCKnrdCMWt7rEPyA5xyuEeYQv4aDpCfGFVaCvox");
-    const devnet_orca_sol_pool_authority = new PublicKey("38Q2148y3BKU6pDUfv1zpeEeKNuDHBH34WdEwo5EiTfe");
-    const devnet_orca_sol_pool_nonce = 252;
-
-    // seeds は address のみ
-    const [pda, bump] = await PublicKey.findProgramAddress(
-        [devnet_orca_sol_pool_address.toBuffer()],
-        DEVNET_ORCA_TOKEN_SWAP_ID,
-    );
-
-    console.log("verify_pda_seeds", "devnet_orca_sol_pool_authority", devnet_orca_sol_pool_authority.toBase58(), "nonce", devnet_orca_sol_pool_nonce);
-    console.log("verify_pda_seeds", "pda", pda.toBase58(), "bump", bump);
-    assert.equal(pda.toBase58(), devnet_orca_sol_pool_authority.toBase58());
-    assert.equal(bump, devnet_orca_sol_pool_nonce);
-}
-
+// Create a "Constant Product" pool
 async function create_orca_constant_product_pool(
     orca_swap_program_id: PublicKey,
     token_A_deposit: PublicKey,
     token_B_deposit: PublicKey,
     fee_structure: FeeStructure
 ) {
-    // 新規作成するアカウントのアドレス生成
+    // key generation
     const address_keypair = Keypair.generate();
     const address = address_keypair.publicKey;
     const pool_token_mint_keypair = Keypair.generate();
@@ -61,12 +42,12 @@ async function create_orca_constant_product_pool(
     const fee_account_keypair = Keypair.generate();
     const fee_account = fee_account_keypair.publicKey;
 
-    // PDAである authority を求める
+    // find PDA
     const [authority, nonce] = await PublicKey.findProgramAddress(
         [address.toBuffer()],
         orca_swap_program_id);
 
-    // 関係するアカウントのアドレスが確定
+    // print pubkeys
     console.log("address", address.toBase58());
     console.log("authority", authority.toBase58(), "nonce", nonce);
     console.log("pool_token_mint", pool_token_mint.toBase58());
@@ -76,7 +57,8 @@ async function create_orca_constant_product_pool(
 
     const init_transaction = new Transaction();
 
-    // 新規トークンを作成, authority は authority にする, decimals は他にあわせて 6
+    // create pool token
+    // its decimals is 6, there is no reason to do so just because other pools do.
     const pool_token_mint_lamports = await connection.getMinimumBalanceForRentExemption(MintLayout.span);
     init_transaction
     .add(SystemProgram.createAccount({
@@ -92,7 +74,9 @@ async function create_orca_constant_product_pool(
         authority,
         null));
 
-    // fee アカウントを作る (ownerをどうすればいいかわからないので wallet にしておく (PDAにはできないためauthorityは使えない))
+    // create fee account
+    // the owner of fee account will be wallet
+    // (I'm not sure if this is valid, but it works good for testing.)
     const fee_account_lamports = await connection.getMinimumBalanceForRentExemption(AccountLayout.span);
     init_transaction
     .add(SystemProgram.createAccount({
@@ -107,7 +91,7 @@ async function create_orca_constant_product_pool(
         fee_account,
         wallet.publicKey));
 
-    // デポジット用のトークンアカウントの所有者変更
+    // change the owner of deposit account to PDA
     init_transaction
     .add(Token.createSetAuthorityInstruction(
         TOKEN_PROGRAM_ID,
@@ -124,7 +108,7 @@ async function create_orca_constant_product_pool(
         wallet.publicKey,
         []));
 
-    // アカウント生成 & 初期化
+    // create swap account
     const address_lamports = await connection.getMinimumBalanceForRentExemption(ORCA_TOKEN_SWAP_ACCOUNT_LEN);
     init_transaction
     .add(SystemProgram.createAccount({
@@ -134,10 +118,9 @@ async function create_orca_constant_product_pool(
         space: ORCA_TOKEN_SWAP_ACCOUNT_LEN,
         programId: orca_swap_program_id}));
 
-    // Devnet の ETH/USDC プール初期化時のトランザクションを参考に組み立てる
+    // I found the transaction for creation of ETH/USDC pool...
     // https://explorer.solana.com/tx/33NQwKdoA8VWfAba8Uo8jtqHoP4bcwjptev9HMhusxDEgc6y2wtpSmCrXKzTaWRmuFKR7UN4aMssxE7EQCy7z3vr?cluster=devnet
     // https://solscan.io/tx/33NQwKdoA8VWfAba8Uo8jtqHoP4bcwjptev9HMhusxDEgc6y2wtpSmCrXKzTaWRmuFKR7UN4aMssxE7EQCy7z3vr?cluster=devnet
-    // ※使われてなさそうなプールの address で関連するトランザクションで最古のものを探せば見つかる
     const keys = [
         { pubkey: address, isSigner: false, isWritable: true },
         { pubkey: authority, isSigner: false, isWritable: false },
@@ -149,17 +132,16 @@ async function create_orca_constant_product_pool(
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ];
 
-    // トランザクションログに加えて SPL Token-Swap のコードを参考にする
+    // very similar to SPL Token-Swap
     // https://github.com/solana-labs/solana-program-library/blob/master/token-swap/js/src/index.ts
-    // ※Orca の Discord にて下記コメントがあった
     //   scuba | Orca 2022/01/01
     //   our program is very similar to https://spl.solana.com/token-swap so this will definitely help you launch your own pools
     // https://discord.com/channels/798712664590254081/838660851178274866/926525811526344735
     const instruction_data = Buffer.alloc(99);
     const instruction_data_layout = BufferLayout.struct([
-        /* 2バイト目の unknown 以外は spl-token-swap と同じ */
+        /* second byte is DIFFERENT from SPL Token-Swap */
         BufferLayout.u8('instruction'),
-        BufferLayout.u8('nonce'), /* SPL-Token-Swap にはない, Orca では2バイト目が PDA の nonce) */
+        BufferLayout.u8('nonce'), /* at Orca, nonce for PDA */
         BufferLayout.nu64('tradeFeeNumerator'),
         BufferLayout.nu64('tradeFeeDenominator'),
         BufferLayout.nu64('ownerTradeFeeNumerator'),
@@ -183,9 +165,9 @@ async function create_orca_constant_product_pool(
             ownerWithdrawFeeDenominator: 0,
             hostFeeNumerator:            0,
             hostFeeDenominator:          0,
-            // ConstantProduct は以降とりあえず0でよい (見つけたトランザクションからわかる)
+            // ConstantProduct specific....
             curveType:                   0, /* ConstantProduct */
-            curveParameters:             Buffer.alloc(32), /* allocは0クリアされている */
+            curveParameters:             Buffer.alloc(32), /* zero cleared */
         },
         instruction_data,
     );
@@ -196,7 +178,7 @@ async function create_orca_constant_product_pool(
         programId: orca_swap_program_id,
         data: instruction_data}));
 
-    // 実行
+    // send tx
     const tx = await connection.sendTransaction(
         init_transaction,
         [wallet, address_keypair, pool_token_mint_keypair, fee_account_keypair],
@@ -218,9 +200,6 @@ async function create_orca_constant_product_pool(
 
 
 async function main() {
-    // PDAの導出方法を確認
-    await verify_pda_seeds();
-
     console.log("wallet", wallet.publicKey.toBase58());
 
     // WrappedSOL
@@ -229,15 +208,16 @@ async function main() {
         new PublicKey("So11111111111111111111111111111111111111112"),
         TOKEN_PROGRAM_ID,
         wallet);
-    // 自作(walletがauthority)のdecimals=6のトークン (USDCのつもりで使っている)
+
+    // MY USDC on DEVNET
     const TokenB = new Token(
         connection,
         new PublicKey("FMwbjM1stnTzi74LV4cS937jeSUds7mZDgcdgnJ1yBDw"),
         TOKEN_PROGRAM_ID,
         wallet);
 
-    // プールのデポジットとして使用するアカウントを作成 (同じ価値のトークンを入れておく, 1SOL=100USDC)
-    // 一方がSOLの場合は WrappedSOL 用のアカウントを作る
+    // Before creating pool, deposit accounts must exist and have the balance which can be considered equal.
+    // Here, 1 (W)SOL = 100 MY USDC on DEVNET...
     const token_A_deposit = await Token.createWrappedNativeAccount(
         connection,
         TOKEN_PROGRAM_ID,
@@ -249,7 +229,7 @@ async function main() {
         token_B_deposit,
         wallet,
         [],
-        100000000 /* μUSDC = 100 USDC */);
+        100000000 /* mUSDC = 100 USDC */);
 
     console.log("wrapped_sol_deposit", token_A_deposit.toBase58(), "amount", (await TokenA.getAccountInfo(token_A_deposit)).amount.toNumber());
     console.log("devnet_usdc_deposit", token_B_deposit.toBase58(), "amount", (await TokenB.getAccountInfo(token_B_deposit)).amount.toNumber());
@@ -262,7 +242,6 @@ async function main() {
     }
 
     const pool_config = await create_orca_constant_product_pool(
-        // 作成するネットワークにより切り替え
         DEVNET_ORCA_TOKEN_SWAP_ID,
         token_A_deposit,
         token_B_deposit,
@@ -284,7 +263,6 @@ async function main() {
 main();
 
 /*
-Devnetにおける実行記録
 
 tx signature 2D5WHqCKMfPrq3oMLvqBZSNXhxkzjh4nbvnpp8Xk21CVXqwH7qKN9oMWDTnXb7WXF8T3F7RvGau21HgKWw3Zv1RE
 create_orca_constant_product_pool SUCCESS!
