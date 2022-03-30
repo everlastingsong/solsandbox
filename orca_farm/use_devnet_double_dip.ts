@@ -61,7 +61,7 @@ async function main() {
     // Note 3: to get harvestable reward amount, orcaSolFarm.getHarvestableAmount(owner.publicKey)
 
     const farmBalance = await ethSolFarm.getFarmBalance(owner.publicKey);
-    const ethSolDDFarm = new OrcaFarmImpl(connection, ethSolDoubleDip); // should be orca.getFarm(OrcaFarmConfig.ETH_SOL_DD) but ETH_SOL is not defined at OrcaFarmConfig...
+    const ethSolDDFarm = new OrcaFarmImpl(connection, ethSolDoubleDip); // should be orca.getFarm(OrcaFarmConfig.ETH_SOL_DD) but ETH_SOL_DD is not defined at OrcaFarmConfig for Mainnet...
     const farmDDDepositPayload = await ethSolDDFarm.deposit(owner, farmBalance);
     const farmDDDepositTxId = await farmDDDepositPayload.execute();
     console.log("Farm(DD) deposited:", farmDDDepositTxId, "\n");
