@@ -50,16 +50,17 @@ async function main() {
     console.log("Pool deposited:", poolDepositTxId, "\n");
 
     /*** Farm Deposit ***/
-    // 5. Deposit some ORCA_ETH LP token for farm token
+    // 5. Deposit some ETH_SOL LP token for farm token
     const lpBalance = await ethSolPool.getLPBalance(owner.publicKey);
     const ethSolFarm = orca.getFarm(OrcaFarmConfig.ETH_SOL_AQ);
     const farmDepositPayload = await ethSolFarm.deposit(owner, lpBalance);
     const farmDepositTxId = await farmDepositPayload.execute();
     console.log("Farm deposited:", farmDepositTxId, "\n");
+    
+    // 6. Deposit farm token for double-dip farm token
     // Note 1: for double dip, repeat step 5 but with the double dip farm
     // Note 2: to harvest reward, orcaSolFarm.harvest(owner)
     // Note 3: to get harvestable reward amount, orcaSolFarm.getHarvestableAmount(owner.publicKey)
-
     const farmBalance = await ethSolFarm.getFarmBalance(owner.publicKey);
     const ethSolDDFarm = new OrcaFarmImpl(connection, ethSolDoubleDip); // should be orca.getFarm(OrcaFarmConfig.ETH_SOL_DD) but ETH_SOL_DD is not defined at OrcaFarmConfig for Mainnet...
     const farmDDDepositPayload = await ethSolDDFarm.deposit(owner, farmBalance);
@@ -69,3 +70,20 @@ async function main() {
 }
 
 main();
+
+/*
+SAMPLE OUTPUT:
+
+$ ts-node devnet_use_doubledip.ts
+wallet 6bEe5o2h32izob7z5i6zvUMP1HW43BDXQxVHmrC7Df1A
+Swap 0.1 SOL for at least 2.1e-8 ETH
+Swapped: 2RgXVaQbcqUM1SxLdWBTBCkRp5uCDKLH8YKXCjut3By3ZQZZxH3PD3jCTRhtjz2YC8LRMfPgrC9mikjK7CcBVSq9 
+
+Deposit at most 0.1 SOL and 2.1e-8 ETH, for at least 0.028081 LP tokens
+Pool deposited: 2tC7QyyXyySUuzjf5vRkeXH1qqugv9h2Gme5KyEACW7PvSPumQ6xF52m87o4QiigecZpfzzWe7Xddn2Hh8rpMMbJ 
+
+Farm deposited: 3dtPPt87ZFzerSrRKiCM4hDzny4awXBZyVLun9Dv3shtxuERrz7ZvAwXZbqXdWsbw51HCnx64a5JSuFGK3fyDZqB 
+
+Farm(DD) deposited: 2W6zJ1EVsUHtrvsh7Xaouq8CYmbgvRdXcP93T6WxHMA5XbnRJFhEhBkaR1pUg63nRaJomp8ynggzEJGbbcVYVyaV
+
+*/
