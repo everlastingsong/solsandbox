@@ -2,13 +2,7 @@ import { getOrca, Network, OrcaPoolConfig } from "@orca-so/sdk";
 import { OrcaWhirlpoolClient, OrcaNetwork } from "@orca-so/whirlpool-sdk";
 import { solToken, usdcToken } from "@orca-so/sdk/dist/constants/tokens";
 import Decimal from "decimal.js";
-import { BN } from "@project-serum/anchor";
 import { Connection } from "@solana/web3.js";
-
-function to_scaled(amount: BN, scale: number): string {
-  const pow10 = new Decimal(10).pow(scale);
-  return new Decimal(amount.toString()).div(pow10).toFixed(scale);
-}
 
 async function main() {
   // SOL/USDC whirlpool
