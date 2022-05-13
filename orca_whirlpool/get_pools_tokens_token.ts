@@ -13,6 +13,12 @@ async function main() {
   console.log("---------- POOLS --------------");
   console.log(pools);
 
+  console.log("---------- POOLS (pair display) --------------");
+  Object.values(pools).map((pool) => console.log(
+    "pair", tokens[pool.tokenMintA].symbol, "/", tokens[pool.tokenMintB].symbol,
+    "address", pool.address
+  ));
+
   console.log("---------- SPECIFIC TOKEN --------------");
   const usdcToken = Object.values(tokens).find((t) => t.coingeckoId === "usd-coin"); // or t.symbol === "USDC"
   console.log(usdcToken);
