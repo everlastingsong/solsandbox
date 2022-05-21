@@ -50,7 +50,7 @@ async function main() {
         whirlpoolData: whirlpool_data,
         tokenAmount: DecimalUtil.toU64(amount_in, SOL.decimals), // toU64 (SOL to lamports)
         amountSpecifiedIsInput: true, // tokenAmount means input amount of SOL
-        slippageTolerance: Percentage.fromFraction(1, 100),
+        slippageTolerance: Percentage.fromFraction(10, 1000), // acceptable slippage is 1.0% (10/1000)
         tickArrayAddresses: tick_array_address,
         tickArrays: tick_array_sequence_data,
     });
@@ -69,3 +69,16 @@ async function main() {
 }
 
 main();
+
+/*
+SAMPLE OUTPUT
+
+$ ts-node src/1_get_quote_and_swap_sol_usdc.ts 
+connection endpoint https://ssc-dao.genesysgo.net
+wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
+whirlpool_key HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+aToB true
+estimatedAmountIn 0.001 SOL
+estimatedAmountOut 0.049225 USDC
+signature 3qfeQYGfNaM3K8pFPFmyyT1dW5gtHay6ECdzxabzciEcwE2yk9F135KFxfJLgLptA2eBhphKq3ozUxKD9A4DBy8W
+*/
