@@ -26,7 +26,8 @@ async function main() {
     const USDC = {mint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), decimals: 6};
     const tick_spacing = 64;
     const whirlpool_key = PDAUtil.getWhirlpool(
-        ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG,
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        ORCA_WHIRLPOOLS_CONFIG,
         SOL.mint, USDC.mint, tick_spacing).publicKey;
     console.log("whirlpool_key", whirlpool_key.toBase58());
 
