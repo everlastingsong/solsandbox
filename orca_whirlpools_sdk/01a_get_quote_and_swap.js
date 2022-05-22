@@ -76,13 +76,6 @@ wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
 whirlpool_key HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
 aToB true
 estimatedAmountIn 0.001 SOL
-estimatedAmountOut 0.050383 USDC
-(base) carnelian:sandbox ikeyanagi$ node src/1_get_quote_and_swap_sol_usdc.js 
-connection endpoint https://ssc-dao.genesysgo.net
-wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
-whirlpool_key HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
-aToB true
-estimatedAmountIn 0.001 SOL
 estimatedAmountOut 0.05038 USDC
 signature 4ND2TeJXg9PGuPmgSEBakyY2emMUoMpqTyiXD8NhKJk4ejvxKU2dxM7MxyMNAwtgbCqBSvF4ugpUcVu3vVXQ7s72
 
