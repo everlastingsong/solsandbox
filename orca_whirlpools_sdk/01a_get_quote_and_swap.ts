@@ -25,28 +25,29 @@ async function main() {
     const SOL = {mint: new PublicKey("So11111111111111111111111111111111111111112"), decimals: 9};
     const USDC = {mint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), decimals: 6};
     const tick_spacing = 64;
-    const whirlpool_key = PDAUtil.getWhirlpool(
+    const whirlpool_pubkey = PDAUtil.getWhirlpool(
         ORCA_WHIRLPOOL_PROGRAM_ID,
         ORCA_WHIRLPOOLS_CONFIG,
         SOL.mint, USDC.mint, tick_spacing).publicKey;
-    console.log("whirlpool_key", whirlpool_key.toBase58());
+    console.log("whirlpool_key", whirlpool_pubkey.toBase58());
+    const whirlpool = await client.getPool(whirlpool_pubkey);
 
     // get swap quote
     const amount_in = new Decimal("0.001" /* SOL */);
 
     const aToB = true; // SOL to USDC direction
-    const whirlpool_data = (await fetcher.getPool(whirlpool_key, true)) as WhirlpoolData;
+    const whirlpool_data = await whirlpool.refreshData(); // or whirlpool.getData()
     const tick_array_address = PoolUtil.getTickArrayPublicKeysForSwap(
         whirlpool_data.tickCurrentIndex,
         whirlpool_data.tickSpacing,
         aToB,
         ctx.program.programId,
-        whirlpool_key
+        whirlpool_pubkey
     );
     const tick_array_sequence_data = await fetcher.listTickArrays(tick_array_address, true);
 
     const quote = swapQuoteByInputToken({
-        whirlpoolAddress: whirlpool_key,
+        whirlpoolAddress: whirlpool_pubkey,
         swapTokenMint: whirlpool_data.tokenMintA, // input is SOL
         whirlpoolData: whirlpool_data,
         tokenAmount: DecimalUtil.toU64(amount_in, SOL.decimals), // toU64 (SOL to lamports)
@@ -62,8 +63,7 @@ async function main() {
     console.log("estimatedAmountOut", DecimalUtil.fromU64(quote.estimatedAmountOut, USDC.decimals).toString(), "USDC");
 
     // execute transaction
-    const pool = await client.getPool(whirlpool_key);
-    const tx = await pool.swap(quote);
+    const tx = await whirlpool.swap(quote);
     const signature = await tx.buildAndExecute();
     console.log("signature", signature);
     ctx.connection.confirmTransaction(signature, "confirmed");
