@@ -1,0 +1,20 @@
+[package]
+name = "get_swap_quote"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+solana-sdk = "1.10.8"
+solana-client = "1.10.8"
+shellexpand = "2.1.0"
+solana-client-helpers = "1.1.0"
+anchor-lang = "0.20.1"
+anchor-spl = "0.20.1"
+spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
+chrono = "0.4"
+
+# local dependencies
+[dependencies.whirlpool]
+path = "../whirlpools/programs/whirlpool"
