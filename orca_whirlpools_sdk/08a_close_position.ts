@@ -10,7 +10,7 @@ import {
   resolveOrCreateATA, TransactionBuilder } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 
-// bash$ export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+// bash$ export ANCHOR_PROVIDER_URL=https://ssc-dao.genesysgo.net
 // bash$ export ANCHOR_WALLET=~/.config/solana/id.json
 // bash$ ts-node this_script.ts
 const provider = Provider.env();
