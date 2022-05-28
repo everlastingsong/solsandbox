@@ -1277,6 +1277,8 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "chrono",
+ "rust_decimal",
+ "rust_decimal_macros",
  "shellexpand",
  "solana-client",
  "solana-client-helpers",
@@ -2466,6 +2468,27 @@ dependencies = [
  "serde",
  "serde_json",
  "winapi",
+]
+
+[[package]]
+name = "rust_decimal"
+version = "1.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22dc69eadbf0ee2110b8d20418c0c6edbaefec2811c4963dc17b6344e11fe0f8"
+dependencies = [
+ "arrayvec",
+ "num-traits",
+ "serde",
+]
+
+[[package]]
+name = "rust_decimal_macros"
+version = "1.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4c70be9367d4bc095d10b48d41b819d09ed4dafc528765a144d32ed1d530654"
+dependencies = [
+ "quote 1.0.10",
+ "rust_decimal",
 ]
 
 [[package]]
