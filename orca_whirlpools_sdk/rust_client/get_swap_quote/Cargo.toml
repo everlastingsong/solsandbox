@@ -14,6 +14,8 @@ anchor-lang = "0.20.1"
 anchor-spl = "0.20.1"
 spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
 chrono = "0.4"
+rust_decimal = { version = "1.23", features = ["maths"] }
+rust_decimal_macros = "1.23"
 
 # local dependencies
 [dependencies.whirlpool]
