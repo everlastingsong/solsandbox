@@ -47,12 +47,12 @@ fn div_floor(a: i32, b: i32) -> i32 {
 fn pricemath_sqrt_price_x64_to_price(sqrt_price_x64: u128, decimals_a: i8, decimals_b: i8) -> String {
   let sqrt_price_x64_decimal = Decimal::from_str(&sqrt_price_x64.to_string()).unwrap();
 
-  let sqrt_price = sqrt_price_x64_decimal
+  let price = sqrt_price_x64_decimal
     .checked_div(Decimal::TWO.powu(64)).unwrap()
     .powu(2)
     .checked_mul(Decimal::TEN.powi((decimals_a - decimals_b) as i64)).unwrap();
   
-  sqrt_price.to_string()
+  price.to_string()
 }
 
 // https://orca-so.github.io/whirlpools/classes/TickUtil.html#getStartTickIndex
