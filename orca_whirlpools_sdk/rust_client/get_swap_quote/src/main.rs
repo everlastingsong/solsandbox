@@ -41,9 +41,11 @@ use crate::whirlpool::{
 // reference: https://doc.rust-jp.rs/book-ja/ch14-02-publishing-to-crates-io.html#cargo-yank%E3%81%A7cratesio%E3%81%8B%E3%82%89%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%82%92%E5%89%8A%E9%99%A4%E3%81%99%E3%82%8B
 
 fn div_floor(a: i32, b: i32) -> i32 {
-  if a < 0 { a / b - 1 } else { a / b }
+  if a < 0 && a%b != 0 { a / b - 1 } else { a / b }
 }
 
+// https://orca-so.github.io/whirlpools/classes/PriceMath.html#sqrtPriceX64ToPrice
+// https://github.com/orca-so/whirlpools/blob/main/sdk/src/utils/public/price-math.ts#L22
 fn pricemath_sqrt_price_x64_to_price(sqrt_price_x64: u128, decimals_a: i8, decimals_b: i8) -> String {
   let sqrt_price_x64_decimal = Decimal::from_str(&sqrt_price_x64.to_string()).unwrap();
 
