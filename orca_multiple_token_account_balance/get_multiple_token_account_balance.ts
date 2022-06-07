@@ -32,3 +32,14 @@ async function main() {
 }
 
 main();
+
+/*
+SAMPLE OUTPUT:
+
+$ ts-node src/get_multiple_token_account_balance.ts 
+2109960602880
+44292699639488
+196877795325366718
+1120741367309
+
+*/
