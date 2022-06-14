@@ -1,12 +1,13 @@
 import { PublicKey } from "@solana/web3.js";
 import {
     WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
-    PDAUtil, PriceMath,
+    PDAUtil, PriceMath, PoolUtil,
 } from "@orca-so/whirlpools-sdk";
-import { Provider } from "@project-serum/anchor";
+import { Provider, BN } from "@project-serum/anchor";
 import { TokenUtil } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import assert from "assert";
+import { DecimalUtil } from "@orca-so/sdk";
 
 // THIS SCRIPT REQUIRES ENVIRON VARS!!!
 // bash$ export ANCHOR_PROVIDER_URL=https://ssc-dao.genesysgo.net
@@ -66,6 +67,15 @@ async function main() {
     const pool = await client.getPool(data.whirlpool);
     const token_a = pool.getTokenAInfo();
     const token_b = pool.getTokenBInfo();
+    const lower_price = PriceMath.tickIndexToPrice(data.tickLowerIndex, token_a.decimals, token_b.decimals);
+    const upper_price = PriceMath.tickIndexToPrice(data.tickUpperIndex, token_a.decimals, token_b.decimals);
+    const amounts = PoolUtil.getTokenAmountsFromLiquidity(
+      data.liquidity,
+      pool.getData().sqrtPrice,
+      PriceMath.tickIndexToSqrtPriceX64(data.tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(data.tickUpperIndex),
+      true
+    );
 
     // verify the SDK version (>= 0.1.6)
     assert(token_a.mint.toBase58() !== token_b.mint.toBase58());
@@ -75,8 +85,10 @@ async function main() {
     console.log("\ttokenA", token_a.mint.toBase58());
     console.log("\ttokenB", token_b.mint.toBase58());
     console.log("\tliquidity", data.liquidity.toString());
-    console.log("\tlower", data.tickLowerIndex, PriceMath.tickIndexToPrice(data.tickLowerIndex, token_a.decimals, token_b.decimals).toFixed(token_b.decimals));
-    console.log("\tupper", data.tickUpperIndex, PriceMath.tickIndexToPrice(data.tickUpperIndex, token_a.decimals, token_b.decimals).toFixed(token_b.decimals));
+    console.log("\tlower", data.tickLowerIndex, lower_price.toFixed(token_b.decimals));
+    console.log("\tupper", data.tickUpperIndex, upper_price.toFixed(token_b.decimals));
+    console.log("\tamountA", DecimalUtil.fromU64(amounts.tokenA, token_a.decimals).toString());
+    console.log("\tamountB", DecimalUtil.fromU64(amounts.tokenB, token_b.decimals).toString());
   }
 }
 
@@ -85,50 +97,80 @@ main();
 /*
 SAMPLE OUTPUT
 
-$ ts-node 06a_list_whirlpool_positions.ts 
+$ ts-node src/06a_list_whirlpool_positions.ts 
 connection endpoint https://ssc-dao.genesysgo.net
 wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
-position 0 4bwWbT1xgPC1vC245XFcV4HKobc9Kxaau7yH6TGG7S5D
-        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
-        tokenA So11111111111111111111111111111111111111112
-        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-        liquidity 7309503
-        lower -36864 25.066682
-        upper -22976 100.511299
-position 1 95fV2Vwf8BeekxKToKFdc3dJ6jCdYnrF36ibJU4yztst
+position 0 95fV2Vwf8BeekxKToKFdc3dJ6jCdYnrF36ibJU4yztst
         whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
         tokenA So11111111111111111111111111111111111111112
         tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
         liquidity 7330773
         lower -36864 25.066682
         upper -22976 100.511299
-position 2 3dX6SdHNTQwj27f1fm79DjnZD1wjE1AvsW16mAz7UzFY
-        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
-        tokenA So11111111111111111111111111111111111111112
-        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-        liquidity 146266273
-        lower -25792 75.844427
-        upper -25088 81.376026
-position 3 3LWvK4W5YhgPybw881WxPj9a33mQu9yYJ4vDtrxYYKeF
-        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
-        tokenA So11111111111111111111111111111111111111112
-        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-        liquidity 127514729
-        lower -25792 75.844427
-        upper -25088 81.376026
-position 4 9UP6D8rR9BVbVDqUkG8wkz9eZVBh69huKraaHehJyH3Z
-        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
-        tokenA So11111111111111111111111111111111111111112
-        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-        liquidity 7376472
-        lower -36864 25.066682
-        upper -22976 100.511299
-position 5 4C5A5TsSZrmoPiptbfqqDjK4LsBcFbuJG76MDja6U3VV
+        amountA 0.019364502
+        amountB 0.10421
+position 1 4C5A5TsSZrmoPiptbfqqDjK4LsBcFbuJG76MDja6U3VV
         whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
         tokenA So11111111111111111111111111111111111111112
         tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
         liquidity 141154010
         lower -25792 75.844427
         upper -25088 81.376026
+        amountA 0.01772685
+        amountB 0
+position 2 Frpe9FB5NeyzUyt7cinB93RBwJ3zwkwGEF7XfgkymhD
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 72874235
+        lower -25856 75.360596
+        upper -25088 81.376026
+        amountA 0.01
+        amountB 0
+position 3 EySqej5z5VdfZ9TUEL84NrcPowTE2iWPaapG31iU8pzW
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 72874235
+        lower -25856 75.360596
+        upper -25088 81.376026
+        amountA 0.01
+        amountB 0
+position 4 2QZkhxUZJZCZUZ962TX4LjaoRsEejVQQ4UeH9RQGHBRK
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 7272583
+        lower -36864 25.066682
+        upper -25856 75.360596
+        amountA 0.01565804
+        amountB 0.103382
+position 5 5j3szbi2vnydYoyALNgttPD9YhCNwshUGkhzmzaP4WF7
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 46870580
+        lower -33472 35.188616
+        upper -30976 45.164444
+        amountA 0.029314012
+        amountB 0
+position 6 4bwWbT1xgPC1vC245XFcV4HKobc9Kxaau7yH6TGG7S5D
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 7309503
+        lower -36864 25.066682
+        upper -22976 100.511299
+        amountA 0.019308317
+        amountB 0.103907
+position 7 9UP6D8rR9BVbVDqUkG8wkz9eZVBh69huKraaHehJyH3Z
+        whirlpool address HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+        tokenA So11111111111111111111111111111111111111112
+        tokenB EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+        liquidity 7376472
+        lower -36864 25.066682
+        upper -22976 100.511299
+        amountA 0.019485218
+        amountB 0.104859
 
 */
