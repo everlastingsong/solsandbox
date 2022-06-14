@@ -35,8 +35,9 @@ async function get_whirlpool_position_pubkeys(
   const whirlpool_position_candidate_pubkeys = token_accounts.map((ta) => {
     const parsed = TokenUtil.deserializeTokenAccount(ta.account.data);
     const pda = PDAUtil.getPosition(ctx.program.programId, parsed.mint);
-    return pda.publicKey
-  });
+    // amount == 1 check
+    return parsed.amount.eq(new BN(1)) ? pda.publicKey : undefined;
+  }).filter(pubkey => pubkey !== undefined);
 
   // check position PDA existance
   const whirlpool_position_candidate_datas = await fetcher.listPositions(whirlpool_position_candidate_pubkeys, true);
