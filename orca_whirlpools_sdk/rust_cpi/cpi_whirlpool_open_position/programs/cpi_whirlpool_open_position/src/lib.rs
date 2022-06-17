@@ -37,7 +37,7 @@ pub mod cpi_whirlpool_open_position {
 
   pub fn open_position(ctx: Context<OpenPositionProxy>, position_bump: u8, tick_lower_index: i32, tick_upper_index: i32) -> ProgramResult {
     // CPI for whirlpool::cpi::open_position
-    // reference: https://project-serum.github.io/anchor/tutorials/tutorial-3.html#defining-a-puppet-master-program
+    // reference: https://book.anchor-lang.com/anchor_in_depth/CPIs.html
     let cpi_program = ctx.accounts.whirlpool_program.to_account_info();
     let cpi_accounts = OpenPosition {
       funder: ctx.accounts.funder.to_account_info(),
