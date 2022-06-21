@@ -6,7 +6,7 @@ const RPC_ENDPOINT_URL="https://ssc-dao.genesysgo.net"
 const COMMITMENT = "confirmed";
 
 const connection = new Connection(RPC_ENDPOINT_URL, COMMITMENT);
-const wallet = new Wallet(Keypair.generate()) // dummy
+const wallet = new Wallet(Keypair.generate()); // dummy
 
 const ctx = WhirlpoolContext.from(connection, wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
 const fetcher = new AccountFetcher(ctx.connection);
