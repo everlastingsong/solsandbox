@@ -14,7 +14,7 @@ const provider = AnchorProvider.env();
 console.log("connection endpoint", provider.connection.rpcEndpoint);
 console.log("wallet", provider.wallet.publicKey.toBase58());
 
-// to avoid type mismatch, from is used despite of withProvider
+// to avoid type mismatch, from is used instead of withProvider
 const ctx = WhirlpoolContext.from(provider.connection, provider.wallet, ORCA_WHIRLPOOL_PROGRAM_ID, AnchorProvider.defaultOptions());
 const fetcher = new AccountFetcher(ctx.connection);
 const client = buildWhirlpoolClient(ctx, fetcher);
