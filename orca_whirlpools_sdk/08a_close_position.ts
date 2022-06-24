@@ -86,7 +86,7 @@ async function main() {
   // 1b. create missing accounts to receive depositted tokens and rewards
   // 7. close WSOL account (if created)
   const tokens_to_be_collected = new Set<string>();
-  if ( !zero_fee ) tokens_to_be_collected.add(token_a.mint.toBase58()).add(token_b.mint.toBase58());
+  tokens_to_be_collected.add(token_a.mint.toBase58()).add(token_b.mint.toBase58());
   if ( !zero_rewards[0] ) tokens_to_be_collected.add(whirlpool.getData().rewardInfos[0].mint.toBase58());
   if ( !zero_rewards[1] ) tokens_to_be_collected.add(whirlpool.getData().rewardInfos[1].mint.toBase58());
   if ( !zero_rewards[2] ) tokens_to_be_collected.add(whirlpool.getData().rewardInfos[2].mint.toBase58());
