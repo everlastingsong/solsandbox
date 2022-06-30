@@ -8,11 +8,11 @@ const connection = new Connection(RPC_ENDPOINT_URL, commitment);
 
 async function main() {
   const ORCA_PROGRAMS = [
-    "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", // V1
-    "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"  // V2
+    "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", // OrcaSwapV1
+    "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"  // OrcaSwapV2
   ];
 
-  const TARGET_SIGNATURE = "4KY3PN6HFbwmCqjRr4ZLExRxY8whbnNymgPPyUn8PT1aY8BWFUKdRaeaWaY1yq6rinLjbArd8xRGkmdE6xqB8hGF";
+  const TARGET_SIGNATURE = "5ptkFkmYTmLnE6cCqoJQutQNJszqGNXS1TcwTP9idAmEP5SgNcXC7Uuk8jZzmtrkdcArJczvQWMAxRrqAjWmuCRJ";
 
   const tx = await connection.getParsedTransaction(TARGET_SIGNATURE);
   const instructions = tx.transaction.message.instructions;
@@ -60,10 +60,10 @@ async function main() {
     // {
     //   parsed: {
     //     info: {
-    //       amount: '3119666',
-    //       authority: '6JqpSRs2R3SbxSJjtao6KyePn74D6MejiREDJGKAmbEv',
-    //       destination: 'BbsiNbFfJsRDwqF4JaiJ6sKecNuY4eWmEaDHcY6h6HuD',
-    //       source: '9FCVhSS9rb6eqdZ7QB8wwnCperXHS317EacR37xuWktk'
+    //       amount: '100000',
+    //       authority: 'H77i7dqcACrsyZLi3JL6GYuWSRLZ7mMyN1Qp8D3vaen2',
+    //       destination: '75HgnSvXbWKZBpZHveX68ZzAhDqMzNDS29X6BGLtxMo1',
+    //       source: 'FbQdXCQgGQYj3xcGeryVVFjKCTsAuu53vmCRtmjQEqM5'
     //     },
     //     type: 'transfer'
     //   },
@@ -87,17 +87,17 @@ main();
 
 TRANSACTION SAMPLE:
 
-https://solscan.io/tx/4KY3PN6HFbwmCqjRr4ZLExRxY8whbnNymgPPyUn8PT1aY8BWFUKdRaeaWaY1yq6rinLjbArd8xRGkmdE6xqB8hGF
+https://solscan.io/tx/5ptkFkmYTmLnE6cCqoJQutQNJszqGNXS1TcwTP9idAmEP5SgNcXC7Uuk8jZzmtrkdcArJczvQWMAxRrqAjWmuCRJ
 
 OUTPUT SAMPLE:
 
 $ ts-node src/get_route_swap_transaction.ts 
-swap! pool: 6fTRDD7sYxCN7oyoSQaN1AWC3P2m8A6gVZzGrpej9DvL
-  input 100000: FbQdXCQgGQYj3xcGeryVVFjKCTsAuu53vmCRtmjQEqM5 >> 7VcwKUtdKnvcgNhZt5BQHsbPrXLxhdVomsgrr7k2N5P5
-  output 3119864: 9FCVhSS9rb6eqdZ7QB8wwnCperXHS317EacR37xuWktk << FdiTt7XQ94fGkgorywN1GuXqQzmURHCDgYtUutWRcy4q
+swap! pool: EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U
+  input 100000: FbQdXCQgGQYj3xcGeryVVFjKCTsAuu53vmCRtmjQEqM5 >> 75HgnSvXbWKZBpZHveX68ZzAhDqMzNDS29X6BGLtxMo1
+  output 3101925: 922EMbZfqss92r2Czd6qqsxLBQh4x5FhDNw9FS2WxhAh << ANP74VNsHwSrq9uUSjiSNyNWvf6ZPrKTmE4gHoNd13Lg
 
-  swap! pool: 68Bg6yQxWm3mrUYk3XzMiF5ycE41HwPhyEdaB1cp6wuo
-  input 3119666: 9FCVhSS9rb6eqdZ7QB8wwnCperXHS317EacR37xuWktk >> BbsiNbFfJsRDwqF4JaiJ6sKecNuY4eWmEaDHcY6h6HuD
-  output 4225: DJHX6f8PgeW5kcAmmvSTo9RHF2twBSMyEz5uiXiAwzHB << 3eVE92aEAsLYcBACXNu1yxoHVfTM8e8vmQC2zSApGRJX
+swap! pool: 68Bg6yQxWm3mrUYk3XzMiF5ycE41HwPhyEdaB1cp6wuo
+  input 3101258: 922EMbZfqss92r2Czd6qqsxLBQh4x5FhDNw9FS2WxhAh >> BbsiNbFfJsRDwqF4JaiJ6sKecNuY4eWmEaDHcY6h6HuD
+  output 4203: DJHX6f8PgeW5kcAmmvSTo9RHF2twBSMyEz5uiXiAwzHB << 3eVE92aEAsLYcBACXNu1yxoHVfTM8e8vmQC2zSApGRJX
 
 */
