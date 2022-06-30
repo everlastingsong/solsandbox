@@ -49,6 +49,7 @@ async function main() {
     const program_b58 = instruction.programId.toBase58();
     if ( !ORCA_PROGRAMS.includes(program_b58) ) return;
 
+    // https://github.com/solana-labs/solana-program-library/blob/master/token-swap/program/src/instruction.rs#L205
     const data_bytes = base58.decode(instruction["data"]);
     if ( data_bytes[0] != 1 /* swap instruction */) return;
 
