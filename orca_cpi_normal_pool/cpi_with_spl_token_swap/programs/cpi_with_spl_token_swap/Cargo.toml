@@ -1,0 +1,26 @@
+[package]
+name = "cpi_with_spl_token_swap"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "cpi_with_spl_token_swap"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+solana-program = "1.9.14"
+# The deployment uses the commit hash: 813aa3. (tag @solana/spl-token@v0.1.5 is nearest tag)
+spl-token-swap = { git = "https://github.com/solana-labs/solana-program-library", tag = "@solana/spl-token@v0.1.5", program = "token-swap", features = ["no-entrypoint"] }
