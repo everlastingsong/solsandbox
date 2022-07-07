@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import {
     WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
-    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, PoolUtil, swapQuoteWithParams
+    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, WhirlpoolData, PoolUtil, swapQuoteByInputToken
 } from "@orca-so/whirlpools-sdk";
 import { Provider } from "@project-serum/anchor";
 import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
@@ -35,19 +35,20 @@ async function main() {
     // get swap quote
     const amount_in = new Decimal("0.001" /* SOL */);
 
-    const a_to_b = true; // SOL to USDC direction
+    const aToB = true; // SOL to USDC direction
     const whirlpool_data = await whirlpool.refreshData(); // or whirlpool.getData()
     const tick_array_address = PoolUtil.getTickArrayPublicKeysForSwap(
         whirlpool_data.tickCurrentIndex,
         whirlpool_data.tickSpacing,
-        a_to_b,
+        aToB,
         ctx.program.programId,
         whirlpool_pubkey
     );
     const tick_array_sequence_data = await fetcher.listTickArrays(tick_array_address, true);
 
-    const quote = swapQuoteWithParams({
-        aToB: a_to_b,
+    const quote = swapQuoteByInputToken({
+        whirlpoolAddress: whirlpool_pubkey,
+        swapTokenMint: whirlpool_data.tokenMintA, // input is SOL
         whirlpoolData: whirlpool_data,
         tokenAmount: DecimalUtil.toU64(amount_in, SOL.decimals), // toU64 (SOL to lamports)
         amountSpecifiedIsInput: true, // tokenAmount means input amount of SOL
@@ -73,13 +74,12 @@ main();
 /*
 SAMPLE OUTPUT
 
-$ ts-node src/01a_get_quote_and_swap_sol_usdc.ts 
+$ ts-node src/1_get_quote_and_swap_sol_usdc.ts 
 connection endpoint https://ssc-dao.genesysgo.net
 wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
 whirlpool_key HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
 aToB true
 estimatedAmountIn 0.001 SOL
-estimatedAmountOut 0.03778 USDC
-signature 4ao14631LWpLgosmuC4Yzk879VLHeGj9SxTiHrTwom6wfXUEaDgduK51jLBeJLnwaGJ1mErLysNYqHfw9Mz4fUx3
-
+estimatedAmountOut 0.049225 USDC
+signature 3qfeQYGfNaM3K8pFPFmyyT1dW5gtHay6ECdzxabzciEcwE2yk9F135KFxfJLgLptA2eBhphKq3ozUxKD9A4DBy8W
 */
