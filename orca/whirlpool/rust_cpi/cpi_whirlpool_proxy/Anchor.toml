@@ -1,0 +1,14 @@
+[features]
+seeds = false
+[programs.localnet]
+cpi_whirlpool_proxy = "GBzoew3zF7XXtxfHzW5xtFVboKkbHxXmBVcYRXcs1MoV"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/yugure/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
