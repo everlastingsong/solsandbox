@@ -1,5 +1,8 @@
 This repository contains sample codes related to Orca's whirlpool.
 
+# Whirlpool account structure overview
+![account structure overview](whirlpool_account_structure_overview.svg)
+
 # Japanese Tutorial for Whirlpool (Tour de Whirlpool)
 https://yugure-sol.notion.site/Tour-de-Whirlpool-afd21607a4b94e3b8e70696ed5e3d8e7
 
