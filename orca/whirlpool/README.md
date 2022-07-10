@@ -1,8 +1,5 @@
 This repository contains sample codes related to Orca's whirlpool.
 
-# Whirlpool account structure overview
-![account structure overview](whirlpool_account_structure_overview.svg)
-
 # Japanese Tutorial for Whirlpool (Tour de Whirlpool)
 https://yugure-sol.notion.site/Tour-de-Whirlpool-afd21607a4b94e3b8e70696ed5e3d8e7
 
@@ -46,6 +43,48 @@ You can get all required tokens in the page.
 * Pool Management
   * [Initialize Pool (WOOF/USDC)](https://solscan.io/tx/ohB95cbdM27X9JvYiFMzp3LzshBV8BsZ1SXAEZCqRiRXzsGeTrBr62bmjrtvrapJuh2JdecLBgXUZRT8LeJ4mE6)
   * [Initialize TickArray (WOOF/USDC)](https://solscan.io/tx/47Y1GyzGMWwFRK9Zq9dM3qcYftZr4iwRDCKD79M44ZapSfZNeTJE2RUxf8Mf2ukua2q9zwjiTXk2EdqS8V3Bft3H)
+
+# Whirlpool account structure overview
+![account structure overview](whirlpool_account_structure_overview.svg)
+
+## accounts
+* WhirlpoolProgram: whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc
+* WhirlpoolsConfig: 2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ
+  * fee_authority: 3Pi4tc4SxZyKZivKxWnYfGNxeqFJJxPc8xRw1VnvXpbb 
+  * collect_protocol_fees_authority: 3Pi4tc4SxZyKZivKxWnYfGNxeqFJJxPc8xRw1VnvXpbb
+  * reward_emission_super_authority: DjDsi34mSB66p2nhBL6YvhbcLtZbkGfNybFeLDjJqxJW
+  * feetiers
+    * for tick_spacing 1: 62dSkn5ktwY1PoKPNMArZA4bZsvyemuknWUnnQ2ATTuN
+    * for tick_spacing 64: HT55NVGVTjWmWLjV7BrSMPVZ7ppU8T2xE5nCAZ6YaGad
+
+* mSOL/USDC Whirlpool
+  * whirlpool: AiMZS5U3JMvpdvsr1KeaMiS354Z1DeSg5XjA4yYRxtFf
+  * token_mint_a: mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So
+  * token_vault_a: 7BgpVo7LDk5MJ29K7p5xbbRASgZ1Q2PhkkHQnKUbZvfj
+  * token_mint_b: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+  * token_vault_b: 42mjJXBiccoctt7oDv3RhXqP8Y7mLZ9SNjv6f4ywCi7p
+  * rewards
+    * reward0_mint: orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE
+    * reward0_vault Gm7R7v4mJL7TBeP1qQBXiMJaLrme57KMgt3ZpgLmv14H
+    * reward1_mint: MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey
+    * reward1_vault: D8qyK7BjxnJTkGYnuAyhac8zYxb8rmaBt1y9zDFjsvPw
+  * tickarrays (start_tick_index / price / tickaray_pubkey)
+    * -50688 / 6.291557 / 8cNSWR4XP3yDcJCdmHCCccuPxizmqZubxZBam9pbDuKC
+    * -45056 / 11.049448 / 2JjsJnEzi3bNyUPq7vJfs6c6T1yMkSc6VrpyE5cazUQU
+    * -39424 / 19.405419 / 6k1iP7TB4Q2SQYvkE6WSmNNG2RTvu1kMnDK5o8rDs38C
+    * -33792 / 34.080460 / HLHqZmm4PYYbUu7VFZXVeBzVDEMaa9kMVkhU8UKTN97r
+    * -28160 / 59.853270 / DprtQaMzPhxFHBATwxC8fvMqYt25jdQfj29VeeG7NKsk
+    * -22528 / 105.116358 / F1H3ooP69A97e3wbXvX6StYKtErAiTWfgFtUWwcL2DVH
+    * -16896 / 184.608940 / GZXAqWt3VmmxAr8rwVFrh43V73pCyVCHUr4SbbnsRUm4
+    * -11264 / 324.216530 / AnTM1fwgxYBFfEsavaFiztLkmY9gV5jgNxFk9dpLaVnL
+    * -5632 / 569.400149 / BAT1zA7Dfh7KnpK7c2XqZ4pKUeScSh7xZTgk8GHqy4jT
+    * 0 / 1000.000000 / C5FNnLBma8oqtQc4sZ2CgJxQjiKPQxj2aXzX32TLY2AS
+    * 5632 / 1756.234172 / 2i5hrdfMgMsbhAdcX2TCu933bkbwef2cCYx4wJay8Z2B
+    * 11264 / 3084.358468 / 9frFE8ynAY85y178ituNkoUNFyB1JZwbQiBCCHJsnFxX
+
+## references
+* [Architecture Overview](https://orca-so.gitbook.io/orca-developer-portal/whirlpools/architecture-overview)
+* [state definition](https://github.com/orca-so/whirlpools/tree/main/programs/whirlpool/src/state)
 
 # Useful links related to Whirlpool
 ## ORCA Official
