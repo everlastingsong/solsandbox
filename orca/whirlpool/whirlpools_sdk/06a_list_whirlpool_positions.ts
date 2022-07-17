@@ -4,10 +4,9 @@ import {
     PDAUtil, PriceMath, PoolUtil,
 } from "@orca-so/whirlpools-sdk";
 import { Provider, BN } from "@project-serum/anchor";
-import { TokenUtil } from "@orca-so/common-sdk";
+import { TokenUtil, DecimalUtil } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import assert from "assert";
-import { DecimalUtil } from "@orca-so/sdk";
 
 // THIS SCRIPT REQUIRES ENVIRON VARS!!!
 // bash$ export ANCHOR_PROVIDER_URL=https://ssc-dao.genesysgo.net
@@ -37,7 +36,7 @@ async function get_whirlpool_position_pubkeys(
     const parsed = TokenUtil.deserializeTokenAccount(ta.account.data);
     const pda = PDAUtil.getPosition(ctx.program.programId, parsed.mint);
     // amount == 1 check
-    return parsed.amount.eq(new BN(1)) ? pda.publicKey : undefined;
+    return (parsed.amount as BN).eq(new BN(1)) ? pda.publicKey : undefined;
   }).filter(pubkey => pubkey !== undefined);
 
   // check position PDA existance
