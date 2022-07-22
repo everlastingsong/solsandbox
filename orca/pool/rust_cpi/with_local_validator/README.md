@@ -85,8 +85,6 @@ https://solanacookbook.com/references/local-development.html#using-mainnet-accou
 ### Get accounts and program
 The following commands are saved as get_accounts_and_program.sh
 
-** !! please set solana config set -u mainnet-beta (to get accounts from mainnet-beta) !! **
-
 #### Get accounts
 solana account -u m --output json-compact --output-file orcasol_2uVjAuRXavpM6h1scGQaxqb6HVaNRn6T2X7HHXTabz25.json 2uVjAuRXavpM6h1scGQaxqb6HVaNRn6T2X7HHXTabz25
 
@@ -107,7 +105,7 @@ solana program dump -u m 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP orca_swap_
 
 ## Start solana-test-validator with accounts and program
 
-** !! --reset is optional !! **
+--reset is optional
 
 The following command is saved as start_solana_test_validator_with_accounts_and_program.sh
 

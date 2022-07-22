@@ -14,6 +14,3 @@ solana account -u m --output json-compact --output-file orca_orcaEKTdK7LKz57vaAY
 solana program dump -u m 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP orca_swap_v2_9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP.so
 
 ls -l
-
-echo "please confirm your solana config (solana config get), it should be set for mainnet-beta"
-solana config get
