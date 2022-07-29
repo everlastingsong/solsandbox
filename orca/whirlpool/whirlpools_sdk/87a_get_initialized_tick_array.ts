@@ -1,7 +1,7 @@
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import {
     WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG, buildWhirlpoolClient,
-    PDAUtil, WhirlpoolData, PriceMath, TickUtil
+    PDAUtil, PriceMath, TickUtil
 } from "@orca-so/whirlpools-sdk";
 import { Wallet } from "@project-serum/anchor";
 
@@ -37,7 +37,8 @@ async function main() {
     ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG,
     token_a.mint, token_b.mint, tick_spacing).publicKey;
   console.log("whirlpool_key", whirlpool_key.toBase58());
-  const whirlpool_data = (await fetcher.getPool(whirlpool_key, true)) as WhirlpoolData;
+  const whirlpool = client.getPool(whirlpool_key);
+  const whirlpool_data = (await whirlpool).getData();
   console.log("current_tick_index", whirlpool_data.tickCurrentIndex);
 
   const current_tickarray_start_index = TickUtil.getStartTickIndex(whirlpool_data.tickCurrentIndex, tick_spacing);
