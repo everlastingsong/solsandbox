@@ -28,6 +28,8 @@ async function main() {
   const TICK_SPACING_STANDARD = 64;
 
   // select input
+  // The list of Orca UI supported whirlpools. (it contains tokenMintA, tokenMintB and tickSpacing)
+  // https://orca-so.gitbook.io/orca-developer-portal/whirlpools/interacting-with-the-protocol/orca-whirlpools-parameters#orca-ui-supported-whirlpools
   const token_a = WBTC;
   const token_b = USDC;
   const tick_spacing = TICK_SPACING_STANDARD;
