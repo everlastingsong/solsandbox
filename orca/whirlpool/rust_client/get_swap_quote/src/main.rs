@@ -2,43 +2,22 @@ use solana_client::{rpc_client::RpcClient};
 use solana_sdk::{
     pubkey::Pubkey,
     commitment_config::CommitmentConfig,
-    signature::{read_keypair_file, Keypair},
+    signature::{Keypair},
 };
 use solana_client_helpers::{Client};
-use std::{str::FromStr, char::MAX};
+use std::{str::FromStr};
 use anchor_lang::prelude::*;
 use std::cell::RefCell;
-use chrono::Utc;
 use rust_decimal::prelude::*;
 use rust_decimal::MathematicalOps;
 
-// use Whirlpool SDK as crate
-// reference: https://qiita.com/AyachiGin/items/6d098d512e6766181a01
-//
-// DIRECTORY STRUCTURE
-//
-// + somewhere
-//   + whirlpool_swap_quote   (MY PROJECT)
-//     + Cargo.toml
-//     + Cargo.lock
-//     + src
-//       + main.rs
-//   + whirlpools (git clone https://github.com/orca-so/whirlpools/)
-//     + programs
-//       + whirlpool
-//
-extern crate whirlpool;
-use crate::whirlpool::{
+// use Whirlpool as crate
+use whirlpool::{
   state::{Whirlpool, TickArray, TICK_ARRAY_SIZE, MAX_TICK_INDEX, MIN_TICK_INDEX},
   manager::swap_manager::swap,
   util::swap_tick_sequence::SwapTickSequence,
-  math::sqrt_price_from_tick_index,
+  math::tick_math::{MIN_SQRT_PRICE_X64, MAX_SQRT_PRICE_X64},
 };
-
-// error: error: failed to select a version for the requirement `anchor-lang = "^0.20.1"`
-// solution: use Cargo.lock from whirlpools
-// reference: https://github.com/project-serum/anchor/issues/1847
-// reference: https://doc.rust-jp.rs/book-ja/ch14-02-publishing-to-crates-io.html#cargo-yank%E3%81%A7cratesio%E3%81%8B%E3%82%89%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%82%92%E5%89%8A%E9%99%A4%E3%81%99%E3%82%8B
 
 fn div_floor(a: i32, b: i32) -> i32 {
   if a < 0 && a%b != 0 { a / b - 1 } else { a / b }
@@ -122,17 +101,9 @@ fn get_swap_quote(
     Some(ta2_refcell.borrow_mut()),
   );
 
-  // off-chain time...
-  let dt = Utc::now();
-  let timestamp = u64::try_from(dt.timestamp()).unwrap();
-
-  // limit by bound...
-  let sqrt_price_limit = if a_to_b {
-    sqrt_price_from_tick_index(tick_arrays[2].start_tick_index)
-  } else {
-    let ticks_in_array = TICK_ARRAY_SIZE * whirlpool.tick_spacing as i32;
-    sqrt_price_from_tick_index(tick_arrays[2].start_tick_index + ticks_in_array)
-  };
+  // dummy
+  let timestamp = whirlpool.reward_last_updated_timestamp;
+  let sqrt_price_limit = if a_to_b { MIN_SQRT_PRICE_X64 } else { MAX_SQRT_PRICE_X64 };
 
   let swap_update = swap(
     whirlpool,
@@ -220,6 +191,7 @@ fn main() {
     a_to_b,
   );
 
+  // no slippage amount
   println!("quote_sol_amount {}", quote_sol_amount);
   println!("quote_usdc_amount {}", quote_usdc_amount);
 }
