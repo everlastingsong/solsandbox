@@ -1,0 +1,18 @@
+[package]
+name = "client_get_position_amount"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+solana-sdk = "1.10.8"
+solana-client = "1.10.8"
+shellexpand = "2.1.0"
+solana-client-helpers = "1.1.0"
+spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
+rust_decimal = { version = "1.23", features = ["maths"] }
+rust_decimal_macros = "1.23"
+anchor-lang = { git = "https://github.com/project-serum/anchor", tag = "v0.20.1", version = "0.20.1", package = "anchor-lang" }
+anchor-spl = { git = "https://github.com/project-serum/anchor", tag = "v0.20.1", version = "0.20.1", package = "anchor-spl" }
+whirlpool = { git = "https://github.com/orca-so/whirlpools", tag = "0.2.0", package = "whirlpool", features = ["cpi"] }
