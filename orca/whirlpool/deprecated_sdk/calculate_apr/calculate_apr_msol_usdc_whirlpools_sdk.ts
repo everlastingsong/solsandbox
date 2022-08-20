@@ -27,7 +27,6 @@ async function main() {
 
   const pool_address = PDAUtil.getWhirlpool(ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG, token_a.mint, token_b.mint, tick_spacing).publicKey;
   const pool = await client.getPool(pool_address);
-  const pool_data = pool.getData();
 
   // get offchain data
   // https://mainnet-zp2-v2.orca.so/pools
@@ -35,11 +34,12 @@ async function main() {
   const pool_offchain_data = offchain_data.filter((pool_data) => pool_data.address == pool_address.toBase58()).shift();
 
   // calc fee based on trade volume
-  const fee_rate = pool_data.feeRate / 1000000;
-  const protocol_fee_rate = pool_data.protocolFeeRate / 10000;
+  const fee_rate = pool.getData().feeRate / 1000000;
+  const protocol_fee_rate = pool.getData().protocolFeeRate / 10000;
   // maybe protocol_fee should be considered
   //const lp_fee_rate = fee_rate * (1 - protocol_fee_rate);
   const lp_fee_rate = fee_rate;
+
   const volume24h_in_usd = pool_offchain_data.volume.day;
   const fee24h_in_usd = new Decimal(volume24h_in_usd).mul(lp_fee_rate).toNumber();
 
@@ -55,7 +55,9 @@ async function main() {
     if ( id !== null && price !== undefined ) token_prices[token.mint] = new Decimal(price.usd);
   });
 
-  const mint_infos = await Promise.all(pool.getData().rewardInfos.map((reward) => fetcher.getMintInfo(reward.mint)));
+  const mint_infos = await Promise.all(pool.getData().rewardInfos.map((reward) => {
+    return PoolUtil.isRewardInitialized(reward) ? fetcher.getMintInfo(reward.mint) : null
+  }));
   const apr = estimateAprsForPriceRange(
     pool,
     token_prices,
@@ -65,12 +67,11 @@ async function main() {
     mint_infos
   );
 
-  console.log(PriceMath.tickIndexToPrice(user_range_lower_tickindex, token_a.decimals, token_b.decimals).toString());
-  console.log(PriceMath.tickIndexToPrice(user_range_upper_tickindex, token_a.decimals, token_b.decimals).toString());
-  console.log(apr);
+  console.log("lower", PriceMath.tickIndexToPrice(user_range_lower_tickindex, token_a.decimals, token_b.decimals).toString());
+  console.log("upper", PriceMath.tickIndexToPrice(user_range_upper_tickindex, token_a.decimals, token_b.decimals).toString());
   console.log("APR", 100 * (apr.fee + apr.rewards[0] + apr.rewards[1] + apr.rewards[2]), "%");
+  console.log("APR detail", apr);
 }
-
 
 // Simple Porting from whirlpool-sdk
 // https://github.com/orca-so/whirlpool-sdk/blob/main/src/utils/public/apr.ts
