@@ -96,7 +96,7 @@ async function main() {
     const { deposit_quote } = estimate(whirlpool, tickarrays, lower_tick_index, upper_tick_index, convert_from.mint, convert_to.mint, convert_from_input);
 
     const convert_from_deposit: BN = a_to_b ? deposit_quote.tokenEstA : deposit_quote.tokenEstB;
-    if ( convert_from_deposit.lt(convert_from_depositable) ) {
+    if ( convert_from_deposit.lte(convert_from_depositable) ) {
       rate = try_rate;
     } else {
       rate_ubound = try_rate;
