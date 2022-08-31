@@ -1,0 +1,154 @@
+[features]
+seeds = false
+skip-lint = false
+[programs.localnet]
+cpi_whirlpool_anchor_gen_v0250 = "9Qa7eLDMfe34JAV9573XWE5jX1NFSviPHaBYkFiLXB8c"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/yugure/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+
+################################################################################
+# Programs
+################################################################################
+[[test.genesis]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program = "test-validator/programs/metaplex.metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s.so"
+
+[[test.genesis]]
+address = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+program = "test-validator/programs/whirlpool.whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc.so"
+
+################################################################################
+# Accounts
+################################################################################
+[[test.validator.account]]
+address = "B66pRzGcKMmxRJ16KMkJMJoQWWhmyk4na4DPcv6X5ZRD"
+filename = "test-validator/accounts/samo_usdc_wp_position.B66pRzGcKMmxRJ16KMkJMJoQWWhmyk4na4DPcv6X5ZRD.json"
+
+[[test.validator.account]]
+address = "DebZvpHUwAUmEfYBiZXpKUAFSqcMTXHe9vxcEaXYJ8er"
+filename = "test-validator/accounts/samo_usdc_wp_reward0_vault.DebZvpHUwAUmEfYBiZXpKUAFSqcMTXHe9vxcEaXYJ8er.json"
+
+[[test.validator.account]]
+address = "DNeQkfQ9ajaW8jGKkkhPpaDAhcHEbmt7beHVWPksPU2k"
+filename = "test-validator/accounts/samo_usdc_wp_reward1_vault.DNeQkfQ9ajaW8jGKkkhPpaDAhcHEbmt7beHVWPksPU2k.json"
+
+[[test.validator.account]]
+address = "HpuNjdx9vTLYTAsxH3N6HCkguEkG9mCEpkrRugqyCPwF"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n101376.HpuNjdx9vTLYTAsxH3N6HCkguEkG9mCEpkrRugqyCPwF.json"
+
+[[test.validator.account]]
+address = "EE9AbRXbCKRGMeN6qAxxMUTEEPd1tQo67oYBQKkUNrfJ"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n107008.EE9AbRXbCKRGMeN6qAxxMUTEEPd1tQo67oYBQKkUNrfJ.json"
+
+[[test.validator.account]]
+address = "CHVTbSXJ3W1XEjQXx7BhV2ZSfzmQcbZzKTGZa6ph6BoH"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n112640.CHVTbSXJ3W1XEjQXx7BhV2ZSfzmQcbZzKTGZa6ph6BoH.json"
+
+[[test.validator.account]]
+address = "4xM1zPj8ihLFUs2DvptGVZKkdACSZgNaa8zpBTApNk9G"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n118272.4xM1zPj8ihLFUs2DvptGVZKkdACSZgNaa8zpBTApNk9G.json"
+
+[[test.validator.account]]
+address = "Gad6jpBXSxFmSqcPSPTE9jABp9ragNc2VsdUCNWLEAMT"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n123904.Gad6jpBXSxFmSqcPSPTE9jABp9ragNc2VsdUCNWLEAMT.json"
+
+[[test.validator.account]]
+address = "ArnRmfQ49b2otrns9Kjug8fZXS8UdmKtxR2arpaevtxq"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n129536.ArnRmfQ49b2otrns9Kjug8fZXS8UdmKtxR2arpaevtxq.json"
+
+[[test.validator.account]]
+address = "C9ahCpEXEysPgA3NGZVqZcVViBoXpoS68tbo2pC4FNHH"
+filename = "test-validator/accounts/samo_usdc_wp_ta_n95744.C9ahCpEXEysPgA3NGZVqZcVViBoXpoS68tbo2pC4FNHH.json"
+
+[[test.validator.account]]
+address = "3xxgYc3jXPdjqpMdrRyKtcddh4ZdtqpaN33fwaWJ2Wbh"
+filename = "test-validator/accounts/samo_usdc_wp_vault_a.3xxgYc3jXPdjqpMdrRyKtcddh4ZdtqpaN33fwaWJ2Wbh.json"
+
+[[test.validator.account]]
+address = "8xKCx3SGwWR6BUr9mZFm3xwZmCVMuLjXn9iLEU6784FS"
+filename = "test-validator/accounts/samo_usdc_wp_vault_b.8xKCx3SGwWR6BUr9mZFm3xwZmCVMuLjXn9iLEU6784FS.json"
+
+[[test.validator.account]]
+address = "9vqYJjDUFecLL2xPUC4Rc7hyCtZ6iJ4mDiVZX7aFXoAe"
+filename = "test-validator/accounts/samo_usdc_wp_whirlpool.9vqYJjDUFecLL2xPUC4Rc7hyCtZ6iJ4mDiVZX7aFXoAe.json"
+
+[[test.validator.account]]
+address = "5j3szbi2vnydYoyALNgttPD9YhCNwshUGkhzmzaP4WF7"
+filename = "test-validator/accounts/sol_usdc_wp_position.5j3szbi2vnydYoyALNgttPD9YhCNwshUGkhzmzaP4WF7.json"
+
+[[test.validator.account]]
+address = "2tU3tKvj7RBxEatryyMYTUxBoLSSWCQXsdv1X6yce4T2"
+filename = "test-validator/accounts/sol_usdc_wp_reward0_vault.2tU3tKvj7RBxEatryyMYTUxBoLSSWCQXsdv1X6yce4T2.json"
+
+[[test.validator.account]]
+address = "HoDhUt77EotPNLUfJuvCCLbmpiM1JR6WLqWxeDPR1xvK"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n16896.HoDhUt77EotPNLUfJuvCCLbmpiM1JR6WLqWxeDPR1xvK.json"
+
+[[test.validator.account]]
+address = "CEstjhG1v4nUgvGDyFruYEbJ18X8XeN4sX1WFCLt4D5c"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n22528.CEstjhG1v4nUgvGDyFruYEbJ18X8XeN4sX1WFCLt4D5c.json"
+
+[[test.validator.account]]
+address = "A2W6hiA2nf16iqtbZt9vX8FJbiXjv3DBUG3DgTja61HT"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n28160.A2W6hiA2nf16iqtbZt9vX8FJbiXjv3DBUG3DgTja61HT.json"
+
+[[test.validator.account]]
+address = "2Eh8HEeu45tCWxY6ruLLRN6VcTSD7bfshGj7bZA87Kne"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n33792.2Eh8HEeu45tCWxY6ruLLRN6VcTSD7bfshGj7bZA87Kne.json"
+
+[[test.validator.account]]
+address = "EVqGhR2ukNuqZNfvFFAitrX6UqrRm2r8ayKX9LH9xHzK"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n39424.EVqGhR2ukNuqZNfvFFAitrX6UqrRm2r8ayKX9LH9xHzK.json"
+
+[[test.validator.account]]
+address = "C8o6QPGfuJD9XmNQY9ZTMXJE5qSDv4LHXaRA3D26GQ4M"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n45056.C8o6QPGfuJD9XmNQY9ZTMXJE5qSDv4LHXaRA3D26GQ4M.json"
+
+[[test.validator.account]]
+address = "93a168GhU5TKPri9jdkjysXhfb13z1BqGh5miGs2Pq6a"
+filename = "test-validator/accounts/sol_usdc_wp_ta_n50688.93a168GhU5TKPri9jdkjysXhfb13z1BqGh5miGs2Pq6a.json"
+
+[[test.validator.account]]
+address = "3YQm7ujtXWJU2e9jhp2QGHpnn1ShXn12QjvzMvDgabpX"
+filename = "test-validator/accounts/sol_usdc_wp_vault_a.3YQm7ujtXWJU2e9jhp2QGHpnn1ShXn12QjvzMvDgabpX.json"
+
+[[test.validator.account]]
+address = "2JTw1fE2wz1SymWUQ7UqpVtrTuKjcd6mWwYwUJUCh2rq"
+filename = "test-validator/accounts/sol_usdc_wp_vault_b.2JTw1fE2wz1SymWUQ7UqpVtrTuKjcd6mWwYwUJUCh2rq.json"
+
+[[test.validator.account]]
+address = "HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ"
+filename = "test-validator/accounts/sol_usdc_wp_whirlpool.HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ.json"
+
+[[test.validator.account]]
+address = "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE"
+filename = "test-validator/accounts/token_orca.orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE.json"
+
+[[test.validator.account]]
+address = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+filename = "test-validator/accounts/token_samo.7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU.json"
+
+[[test.validator.account]]
+address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+filename = "test-validator/accounts/token_usdc.EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v.json"
+
+[[test.validator.account]]
+address = "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"
+filename = "test-validator/accounts/whirlpools_config.2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ.json"
+
+[[test.validator.account]]
+address = "62dSkn5ktwY1PoKPNMArZA4bZsvyemuknWUnnQ2ATTuN"
+filename = "test-validator/accounts/whirlpools_config_feetier1.62dSkn5ktwY1PoKPNMArZA4bZsvyemuknWUnnQ2ATTuN.json"
+
+[[test.validator.account]]
+address = "HT55NVGVTjWmWLjV7BrSMPVZ7ppU8T2xE5nCAZ6YaGad"
+filename = "test-validator/accounts/whirlpools_config_feetier64.HT55NVGVTjWmWLjV7BrSMPVZ7ppU8T2xE5nCAZ6YaGad.json"
