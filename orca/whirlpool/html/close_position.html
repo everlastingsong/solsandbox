@@ -1,0 +1,284 @@
+<html>
+<head>
+    <title>Whirlpool Close Position (for Rescue)</title>
+    <meta charset="utf-8" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.0/decimal.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <script>
+        const WHIRLPOOL_PROGRAM_ID = new solanaWeb3.PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc');
+        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        const DEPRECATED_WHIRLPOOLS_CONFIG = new solanaWeb3.PublicKey("4NPRn2WVyyCrKEQBFaog8dvTjPLK8ETddrZUyRLq61Bo");
+
+        // 1) Download: https://mainnet-zp2-v2.orca.so/tokens
+        // 2) $ cat tokens.json | jq -r 'map({ mint: .mint, symbol: .symbol})' | jq -c
+        const TOKENS_JSON = [{"mint":"So11111111111111111111111111111111111111112","symbol":"SOL"},{"mint":"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So","symbol":"mSOL"},{"mint":"MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey","symbol":"MNDE"},{"mint":"7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj","symbol":"stSOL"},{"mint":"F6v4wfAdJB8D8p77bMXZgYt8TDKsYxLYxH5AFhUkYx9W","symbol":"wLUNA"},{"mint":"SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y","symbol":"SHDW"},{"mint":"9vMJfxuKxXBoEa7rM12mYLMwTacLMLDJqHozw96WQL8i","symbol":"wUST"},{"mint":"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU","symbol":"SAMO"},{"mint":"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB","symbol":"USDT"},{"mint":"HZRCwxP2Vq9PCpPXooayhJ2bxTpo5xfpQrwB1svh332p","symbol":"wLDO"},{"mint":"7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs","symbol":"whETH"},{"mint":"9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E","symbol":"BTC"},{"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","symbol":"USDC"},{"mint":"orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE","symbol":"ORCA"},{"mint":"9iLH8T7zoWhY7sBmj1WK9ENbWdS1nL8n9wAxaeRitTa6","symbol":"USH"},{"mint":"5PmpMzWjraf3kSsGEKtqdUsCoLhptg4yriZ17LKKdBBy","symbol":"HDG"},{"mint":"USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX","symbol":"USDH"},{"mint":"9nEqaUcb16sQ3Tn1psbkWqyhPdLmfHWjKGymREjsAgTE","symbol":"WOOF"},{"mint":"a11bdAAuV8iB2fu7X6AxAvDTo1QZ8FXB3kk5eecdasp","symbol":"ABR"},{"mint":"KgV1GvrHQmRBY8sHQQeUKwTm2r2h8t4C8qt12Cw1HVE","symbol":"wAVAX"},{"mint":"GNCjk3FmPPgZTkbQRSxr6nCvLtYMbXKMnRxg8BgJs62e","symbol":"CELO"},{"mint":"EsPKhGTMf3bGoy4Qm7pCv3UCcWqAmbC1UGHBTDxRjjD4","symbol":"FTM"},{"mint":"EdAhkbj5nF9sRM7XN7ewuW8C9XEUMs8P7cnoQ57SYE96","symbol":"FAB"},{"mint":"ZScHuTtqZukUrtZS43teTKGs2VqkKL8k4QCouR2n6Uo","symbol":"wstETH"},{"mint":"HBB111SCo9jkCejsZfz8Ec8nH7T6THF8KEKSnvwT6XK6","symbol":"HBB"},{"mint":"8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh","symbol":"COPE"},{"mint":"5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm","symbol":"scnSOL"},{"mint":"7Q2afV64in6N6SeZsAAB81TJzwDoD6zpqmHkzi9Dcavn","symbol":"JSOL"},{"mint":"5Wsd311hY8NXQhkt9cWHwTnqafk7BGEbLu8Py3DSnPAr","symbol":"CMFI"},{"mint":"2HeykdKjzHKGm2LKHw8pDYwjKPiFEoXAz74dirhUgQvq","symbol":"SAO"},{"mint":"4SZjjNABoqhbd4hnapbvoEPEqT8mnNkfbEoAwALf1V8t","symbol":"CAVE"},{"mint":"MEANeD3XDdUmNMsRGjASkSWdC8prLYsoRJ61pPeHctD","symbol":"MEAN"},{"mint":"UNQtEecZ5Zb4gSSVHCAWUQEoNnSVEbWiKCi1v9kdUJJ","symbol":"UNQ"},{"mint":"Lrxqnh6ZHKbGy3dcrCED43nsoLkM1LTzU2jRfWe8qUC","symbol":"LARIX"},{"mint":"METAmTMXwdb8gYzyCPfXXFmZZw4rUsXX58PNsDg7zjL","symbol":"SLC"},{"mint":"GFX1ZjR2P15tmrSwow6FjyDYcEkoFb4p4gJCpLBjaxHD","symbol":"GOFX"},{"mint":"FANTafPFBAt93BNJVpdu25pGPmca3RfwdsDsRrT3LX1r","symbol":"FANT"},{"mint":"SuperbZyz7TsSdSoFAZ6RYHfAWe9NmjXBLVQpS8hqdx","symbol":"SB"},{"mint":"xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW","symbol":"SLIM"},{"mint":"4ThReWAbAVZjNVgs5Ui9Pk3cZ5TYaD9u6Y89fp6EFzoF","symbol":"1SOL"},{"mint":"seedEDBqu63tJ7PFqvcbwvThrYUkQeqT6NLf81kLibs","symbol":"SEEDED"},{"mint":"iVNcrNE9BRZBC9Aqf753iZiZfbszeAVUoikgT9yvr2a","symbol":"IVN"},{"mint":"StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT","symbol":"STEP"},{"mint":"F3nefJBcejYbtdREjui1T9DPh5dBgpkKq7u2GAAMXs5B","symbol":"AART"},{"mint":"8upjSpvjcdpuzhfR1zriwg5NXkwDruejqNE9WNbPRtyA","symbol":"GRAPE"},{"mint":"TuLipcqtGVXP9XR62wM8WWCm6a9vhLs7T1uoWBk6FDs","symbol":"TULIP"},{"mint":"Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1","symbol":"SBR"},{"mint":"MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac","symbol":"MNGO"},{"mint":"SUNNYWgPQmFxe9wTZzNK7iPnJ3vYDrkgnxJRJm1s3ag","symbol":"SUNNY"},{"mint":"4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R","symbol":"RAY"},{"mint":"AGFEad2et2ZJif9jaGpdMixQqvW5i81aBdvKe7PHNfz3","symbol":"FTT"},{"mint":"SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt","symbol":"SRM"},{"mint":"PoRTjZMPXb9T7dyU7tpLEZRQj7e6ssfAE62j2oQuc6y","symbol":"PORT"},{"mint":"MAPS41MDahZ9QdKXhVa4dWB9RuyfV4XqhyAZ8XcYepb","symbol":"MAPS"},{"mint":"ETAtLmCmsoiEEKfNrHKJ2kYy3MoABhU6NQvpSfij5tDs","symbol":"MEDIA"},{"mint":"kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6","symbol":"KIN"},{"mint":"JET6zMJWkCN9tpRT2v2jfAmm5VnQFDpUBCyaKojmGtz","symbol":"JET"},{"mint":"AURYydfxJib1ZkTir1Jn1J9ECYUtjb6rKQVmtYaixWPP","symbol":"AURY"},{"mint":"SLNDpmoWTVADgEdndyvWzroNL7zSi1dF9PC3xHGtPwp","symbol":"SLND"},{"mint":"ANAxByE6G2WjFp7A4NqtWYXb3mgruyzZYg3spfxe6Lbo","symbol":"ANA"},{"mint":"SLRSSpSLUTP7okbCUBYStWCo1vUgyt775faPqz8HUMr","symbol":"SLRS"},{"mint":"G9tt98aYSznRk7jWsfuz9FnTdokxS6Brohdo9hSmjTRB","symbol":"PUFF"},{"mint":"zebeczgi5fSEtbpfQKVZKCJ3WgYXxjkMUkNNx7fLKAF","symbol":"ZBC"},{"mint":"AG5j4hhrd1ReYi7d1JsZL8ZpcoHdjXvc8sdpWF74RaQh","symbol":"svtOKAY"},{"mint":"Ez2zVjw85tZan1ycnJ5PywNNxR6Gm4jbXQtZKyQNu3Lv","symbol":"fUSDC"},{"mint":"svtMpL5eQzdmB3uqK9NXaQkq8prGZoKQFNVJghdWCkV","symbol":"SVT"},{"mint":"AUrMpCDYYcPuHhyNX8gEEqbmDPFUpBpHrNW3vPeCFn5Z","symbol":"AVAX"},{"mint":"kiTkNc7nYAu8dLKjQFYPx3BqdzwagZGBUrcb7d4nbN5","symbol":"depKI"},{"mint":"ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx","symbol":"ATLAS"},{"mint":"poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk","symbol":"POLIS"},{"mint":"7kbnvuGBxxj8AG9qp8Scn56muWGaRaFqxg1FsRp3PaFT","symbol":"UXD"},{"mint":"DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ","symbol":"DUST"},{"mint":"EjmyN6qEC1Tf1JxiG1ae7UTJhUxSwk1TCWNWqxWV4J6o","symbol":"DAI"},{"mint":"UXPhBoR3qG4UCiGNJfV7MqhHyFqKN68g45GoYvAeL2M","symbol":"UXP"},{"mint":"kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc","symbol":"KI"},{"mint":"A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM","symbol":"USDCet"},{"mint":"SNSNkV9zfG5ZKWQs6x4hxvBRV6s8SqMfSGCtECDvdMd","symbol":"SNS"},{"mint":"CDJWUqTcYTVAKXAVXoQZFes5JUFc7owSeq7eMQcDSbo5","symbol":"renBTC"},{"mint":"GEJpt3Wjmr628FqXxTgxMce1pLntcPV4uFi8ksxMyPQh","symbol":"daoSOL"},{"mint":"USDrbBQwQbQ2oWHUPfA8QBHcyVxKUq1xHyXsSLKdUq2","symbol":"USDr"},{"mint":"Hg35Vd8K3BS2pLB3xwC2WqQV8pmpCm3oNRGYP1PEpmCM","symbol":"eSOL"},{"mint":"6naWDMGNWwqffJnnXFLBCLaYu1y5U9Rohe5wwJPHvf1p","symbol":"SCRAP"},{"mint":"FoRGERiW7odcCBGU1bztZi16osPBHjxharvDathL5eds","symbol":"FORGE"},{"mint":"ratioMVg27rSZbSvBopUvsdrGUzeALUfFma61mpxc8J","symbol":"RATIO"},{"mint":"GePFQaZKHcWE5vpxHfviQtH5jgxokSs51Y5Q4zgBiMDs","symbol":"JFI"},{"mint":"iJF17JCu78E51eAgwtCwvgULHh2ZqCeRrcFP7wgcc6w","symbol":"I-JFI-Q4"},{"mint":"jJF1SrhzpyqYawE9ruSVKrHjfxjaG5TUMFB5vnXUWVm","symbol":"J-JFI"},{"mint":"jRAYPwLn4ZRGRSKu7GWu6B3Qx3Vj2JU88agUweEceyo","symbol":"J-RAY"},{"mint":"iRAYYHCNhEpbDiVt6QKK3Q57DMgw4p8zEKsVz3WfMjW","symbol":"I-RAY-Q4"}];
+        const SYMBOLS = new Map(); TOKENS_JSON.map((t) => SYMBOLS.set(t.mint, t.symbol));
+        const get_symbol = (pubkey) => { let b58 = pubkey.toBase58(); return SYMBOLS.get(b58) || (b58.substring(0, 4) + "..." + b58.substring(b58.length-4)); }
+
+        let cached_positions;
+
+        function to_ui_amount(u64_amount, decimals) {
+          return u64_amount.div(Decimal.pow(10, decimals));
+        }
+
+        function get_position_pubkey(position_mint_pubkey) {
+          const seeds = [new TextEncoder().encode("position"), position_mint_pubkey.toBytes()];
+          const [pubkey, bump] = solanaWeb3.PublicKey.findProgramAddressSync(seeds, WHIRLPOOL_PROGRAM_ID);
+          return pubkey;
+        }
+
+        function get_u128_decimal(le_uint8array) {
+          return new Decimal("0x" + le_uint8array.reverse().toString("hex"));
+        }
+
+        function parse_mint_account(data_uint8array) {
+          const data_view = new DataView(data_uint8array.buffer);
+          // pub mint_authority: COption<Pubkey>, // 4+32
+          // pub supply: u64,                     // 8
+          // pub decimals: u8,                    // 1
+          let offset = 4 + 32 + 8;
+          const decimals = data_view.getUint8(offset);
+
+          return { decimals };
+        }
+
+        function parse_position_account(data_uint8array) {
+          const data_view = new DataView(data_uint8array.buffer);
+          // ANAHOR DISC                // 8
+          // pub whirlpool: Pubkey,     // 32
+          // pub position_mint: Pubkey, // 32
+          // pub liquidity: u128,       // 16
+          // pub tick_lower_index: i32, // 4
+          // pub tick_upper_index: i32, // 4
+
+          let offset = 8;
+          const whirlpool = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32;
+          const liquidity = get_u128_decimal(data_uint8array.slice(offset, offset+16)); offset += 16;
+          const tick_lower_index = data_view.getInt32(offset, true); offset += 4;
+          const tick_upper_index = data_view.getInt32(offset, true); offset += 4;
+          
+          return { whirlpool, tick_lower_index, tick_upper_index, liquidity };
+        }
+
+        function parse_whirlpool_account(data_uint8array) {
+          let data_view = new DataView(data_uint8array.buffer);
+          // ANAHOR DISC                     // 8
+          // pub whirlpools_config: Pubkey,  // 32
+          // pub whirlpool_bump: [u8; 1],    // 1
+          // pub tick_spacing: u16,          // 2
+          // pub tick_spacing_seed: [u8; 2], // 2
+          // pub fee_rate: u16,              // 2
+          // pub protocol_fee_rate: u16,     // 2
+          // pub liquidity: u128,            // 16
+          // pub sqrt_price: u128,           // 16
+          // pub tick_current_index: i32,    // 4
+          // pub protocol_fee_owed_a: u64,   // 8
+          // pub protocol_fee_owed_b: u64,   // 8
+          // pub token_mint_a: Pubkey,       // 32
+          // pub token_vault_a: Pubkey,      // 32
+          // pub fee_growth_global_a: u128,  // 16
+          // pub token_mint_b: Pubkey,       // 32
+          // pub token_vault_b: Pubkey,      // 32
+          // pub fee_growth_global_b: u128,  // 16
+          // pub reward_last_updated_timestamp: u64,               // 8
+          // pub reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS], // 384
+          //     pub mint: Pubkey,                    // 32
+          //     pub vault: Pubkey,                   // 32
+          //     pub authority: Pubkey,               // 32
+          //     pub emissions_per_second_x64: u128,  // 16
+          //     pub growth_global_x64: u128,         // 16
+          let offset = 8;
+          const whirlpools_config = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 1 + 2 + 2 + 2 + 2 + 16;
+          const sqrt_price = get_u128_decimal(data_uint8array.slice(offset, offset+16)); offset += 16;
+          offset += 4 + 8 + 8;
+          const token_mint_a = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 16;
+          const token_mint_b = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 16 + 8;
+          const token_mint_r0 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 32 + 16 + 16;
+          const token_mint_r1 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 32 + 16 + 16;
+          const token_mint_r2 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 32 + 16 + 16;
+
+          return { whirlpools_config, sqrt_price, token_mint_a, token_mint_b, token_mint_r0, token_mint_r1, token_mint_r2 };
+        }
+
+        function tick_index_to_sqrt_price_x64(tick_index) {
+          const x64 = Decimal.pow(2, 64);
+          return Decimal.pow(new Decimal("1.0001"), tick_index).sqrt().mul(x64).floor();
+        }
+
+        function get_token_amounts_from_liquidity(liquidity, current_sqrt_price_x64, lower_sqrt_price_x64, upper_sqrt_price_x64) {
+          const lower = lower_sqrt_price_x64;
+          const upper = upper_sqrt_price_x64;
+          const current = Decimal.max(Decimal.min(current_sqrt_price_x64, upper), lower); // bounded
+          const x64 = Decimal.pow(2, 64);
+
+          // tokenA = L/current - L/upper = L*(upper - current) / (current * upper)
+          const amount_a = liquidity.mul(x64).mul(upper.sub(current)).div(current.mul(upper)).floor();
+          // tokenB = L*current - L*lower = L*(current - lower)
+          const amount_b = liquidity.mul(current.sub(lower)).div(x64).floor();
+
+          return { amount_a, amount_b };
+        }
+
+        async function list_whirlpool_positions(connection, wallet_pubkey) {
+          const parsed_token_accounts = await connection.getParsedTokenAccountsByOwner(wallet_pubkey, { programId: TOKEN_PROGRAM_ID });
+
+          // get position address candidates
+          const candidates = [];
+          for (let i=0; i<parsed_token_accounts.value.length; i++) {
+            // value.N.account.data.parsed.info.{mint, tokenAmount.{uiAmountString, decimals}}
+            const token_account = parsed_token_accounts.value[i].account.data.parsed.info;
+            const amount = token_account.tokenAmount;
+
+            if ( amount.uiAmountString === "1" && amount.decimals === 0 ) {
+              const position_mint_pubkey = new solanaWeb3.PublicKey(token_account.mint);
+              const position_pubkey = get_position_pubkey(position_mint_pubkey);
+              candidates.push(position_pubkey);
+            }
+          }
+
+          // get position account_info
+          const position_account_infos = await connection.getMultipleAccountsInfo(candidates);
+
+          const position_datas = [];
+          const whirlpool_pubkeys = [];
+          for (let i=0; i<candidates.length; i++) {
+            if ( position_account_infos[i] === null ) continue;
+            const position_data = parse_position_account(position_account_infos[i].data);
+            position_datas.push({ pubkey: candidates[i], ...position_data });
+            whirlpool_pubkeys.push(position_data.whirlpool);
+          }
+
+          // get whirlpool account_info
+          const whirlpool_account_infos = await connection.getMultipleAccountsInfo(whirlpool_pubkeys);
+          const positions = [];
+          for (let i=0; i<whirlpool_account_infos.length; i++) {
+            const whirlpool_data = parse_whirlpool_account(whirlpool_account_infos[i].data);
+            positions.push({ ...position_datas[i], whirlpool_data });
+          }
+
+          // get mint account_info
+          const mint_pubkey_set = new Set();
+          positions.map((p) => mint_pubkey_set.add(p.whirlpool_data.token_mint_a.toBase58()).add(p.whirlpool_data.token_mint_b.toBase58()));
+          const mint_pubkeys = Array.from(mint_pubkey_set).map((b58) => new solanaWeb3.PublicKey(b58));
+          const mint_account_infos = await connection.getMultipleAccountsInfo(mint_pubkeys);
+          const decimals_map = new Map();
+          for (let i=0; i<mint_pubkeys.length; i++) {
+            const mint_data = parse_mint_account(mint_account_infos[i].data);
+            decimals_map.set(mint_pubkeys[i].toBase58(), mint_data.decimals);
+          }
+
+          // add decimals
+          return positions.map((p) => {
+            return {
+              ...p,
+              decimals_a: decimals_map.get(p.whirlpool_data.token_mint_a.toBase58()),
+              decimals_b: decimals_map.get(p.whirlpool_data.token_mint_b.toBase58())
+            }
+          });
+        }
+
+        async function list_positions() {
+          const wallet_pubkey = new solanaWeb3.PublicKey($("#wallet_address").val().trim());
+          const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
+
+          const positions = await list_whirlpool_positions(connection, wallet_pubkey);
+          cached_positions = positions;
+
+          // UI rebuild
+          $("#positions").find("tr").remove();
+          for (let i=0; i<positions.length; i++) {
+            const p = positions[i];
+
+            const deprecated = p.whirlpool_data.whirlpools_config.equals(DEPRECATED_WHIRLPOOLS_CONFIG);
+            const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
+            const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
+            const amounts = get_token_amounts_from_liquidity(
+              p.liquidity,
+              p.whirlpool_data.sqrt_price,
+              tick_index_to_sqrt_price_x64(p.tick_lower_index),
+              tick_index_to_sqrt_price_x64(p.tick_upper_index)
+            );
+            const ui_amount_a = to_ui_amount(amounts.amount_a, p.decimals_a);
+            const ui_amount_b = to_ui_amount(amounts.amount_b, p.decimals_b);
+
+            const html = `
+              <tr>
+                <td>${p.pubkey.toBase58()}</td>
+                <td>${deprecated}</td>
+                <td>${p.whirlpool.toBase58()}</td>
+                <td>${p.liquidity.toString()}</td>
+                <td>${ui_amount_a} ${symbol_a}</td>
+                <td>${ui_amount_b} ${symbol_b}</td>
+                <td><button onclick="close_position(${i});">close</button></td>
+              </tr>`;
+            $("#positions").append(html);
+          }
+        }
+
+        async function close_position(cached_position_index) {
+          const p = cached_positions[cached_position_index];
+          const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
+          const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
+          const amounts = get_token_amounts_from_liquidity(
+            p.liquidity,
+            p.whirlpool_data.sqrt_price,
+            tick_index_to_sqrt_price_x64(p.tick_lower_index),
+            tick_index_to_sqrt_price_x64(p.tick_upper_index)
+          );
+          const ui_amount_a = to_ui_amount(amounts.amount_a, p.decimals_a);
+          const ui_amount_b = to_ui_amount(amounts.amount_b, p.decimals_b);
+
+          const msg = "Are you sure you want to close the following position?"
+                    + `\n`
+                    + `\n Position: ${p.pubkey.toBase58()}`
+                    + `\n Liquidity: ${p.liquidity.toString()} (100%)`
+                    + `\n A: ${ui_amount_a} ${symbol_a}`
+                    + `\n B: ${ui_amount_b} ${symbol_b}`;
+
+          const confirm = window.confirm(msg);
+          if ( ! confirm ) return;
+
+          window.alert("connect wallet & close position (NOT IMPLEMENTED YET!)");
+        }
+
+    </script>
+</head>
+<body>
+
+<h1>Whirlpool Close Position (for Rescue Purpose)</h1>
+<p>
+  Wallet PublicKey: <input type="text" size="60" id="wallet_address" value="r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6" /><button onclick="list_positions();">list positions</button>
+</p>
+<ul style="font-size: small;">
+  <li>normal wallet: r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6</li>
+  <li>wallet with deprecated position: 3bgNmKXbjyQwWbwf2wvw416nku9tNv8FPQMwYhB4P6UF</li>
+</ul>
+<hr>
+<table border="1" style="font-size: x-small;">
+    <thead>
+        <tr>
+            <th>position pubkey</th>
+            <th>deprecated</th>
+            <th>pool</th>
+            <th>liquidity</th>
+            <th>tokenA</th>
+            <th>tokenB</th>
+            <th>close</th>
+        </tr>
+    </thead>
+    <tbody id="positions">
+    </tbody>
+</table>
+
+</body>
+</html>
