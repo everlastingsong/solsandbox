@@ -1,28 +1,219 @@
 <html>
 <head>
-    <title>Whirlpool Close Position (for Rescue)</title>
+    <title>Whirlpool Position Closer</title>
     <meta charset="utf-8" />
 
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css' />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.0/decimal.min.js"></script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 
+    <style>
+      body { font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: small; }
+      thead { background-color: #eeeeee; }
+      tr.deprecated { background-color: #ffcccc; }
+      a { text-decoration: none; }
+      a, a:hover, a:visited { color: inherit; }
+      td.empty-table { min-width: 500px; height: 100px; text-align: center; }
+      button.close { color: darkred; }
+    </style>
+
+    <!-- toastr -->
     <script>
-        const WHIRLPOOL_PROGRAM_ID = new solanaWeb3.PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc');
-        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-        const DEPRECATED_WHIRLPOOLS_CONFIG = new solanaWeb3.PublicKey("4NPRn2WVyyCrKEQBFaog8dvTjPLK8ETddrZUyRLq61Bo");
+        toastr.options = {
+          "closeButton": false,
+          "debug": false,
+          "newestOnTop": false,
+          "progressBar": false,
+          "positionClass": "toast-bottom-full-width",
+          "preventDuplicates": false,
+          "onclick": null,
+          "showDuration": "300",
+          "hideDuration": "1000",
+          "timeOut": "3000",
+          "extendedTimeOut": "1000",
+          "showEasing": "swing",
+          "hideEasing": "linear",
+          "showMethod": "fadeIn",
+          "hideMethod": "fadeOut"
+        }
+
+        function show_toastr(toast_type, message) { $(window).prop("toastr")[toast_type](message); }
+        function notify_success(message) { show_toastr("success", message); }
+        function notify_info(message) { show_toastr("info", message); }
+        function notify_warning(message) { show_toastr("warning", message); }
+        function notify_failed(message) { show_toastr("error", message); }
+    </script>
+
+    <!-- GLOBAL CONSTANTS -->
+    <script>
+        const SYSTEM_PROGRAM_ID = solanaWeb3.SystemProgram.programId;
+        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+        const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+        const SYSVAR_RENT_PUBKEY = solanaWeb3.SYSVAR_RENT_PUBKEY;
+        const WRAPPED_SOL_MINT = new solanaWeb3.PublicKey("So11111111111111111111111111111111111111112");
 
         // 1) Download: https://mainnet-zp2-v2.orca.so/tokens
         // 2) $ cat tokens.json | jq -r 'map({ mint: .mint, symbol: .symbol})' | jq -c
         const TOKENS_JSON = [{"mint":"So11111111111111111111111111111111111111112","symbol":"SOL"},{"mint":"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So","symbol":"mSOL"},{"mint":"MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey","symbol":"MNDE"},{"mint":"7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj","symbol":"stSOL"},{"mint":"F6v4wfAdJB8D8p77bMXZgYt8TDKsYxLYxH5AFhUkYx9W","symbol":"wLUNA"},{"mint":"SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y","symbol":"SHDW"},{"mint":"9vMJfxuKxXBoEa7rM12mYLMwTacLMLDJqHozw96WQL8i","symbol":"wUST"},{"mint":"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU","symbol":"SAMO"},{"mint":"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB","symbol":"USDT"},{"mint":"HZRCwxP2Vq9PCpPXooayhJ2bxTpo5xfpQrwB1svh332p","symbol":"wLDO"},{"mint":"7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs","symbol":"whETH"},{"mint":"9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E","symbol":"BTC"},{"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","symbol":"USDC"},{"mint":"orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE","symbol":"ORCA"},{"mint":"9iLH8T7zoWhY7sBmj1WK9ENbWdS1nL8n9wAxaeRitTa6","symbol":"USH"},{"mint":"5PmpMzWjraf3kSsGEKtqdUsCoLhptg4yriZ17LKKdBBy","symbol":"HDG"},{"mint":"USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX","symbol":"USDH"},{"mint":"9nEqaUcb16sQ3Tn1psbkWqyhPdLmfHWjKGymREjsAgTE","symbol":"WOOF"},{"mint":"a11bdAAuV8iB2fu7X6AxAvDTo1QZ8FXB3kk5eecdasp","symbol":"ABR"},{"mint":"KgV1GvrHQmRBY8sHQQeUKwTm2r2h8t4C8qt12Cw1HVE","symbol":"wAVAX"},{"mint":"GNCjk3FmPPgZTkbQRSxr6nCvLtYMbXKMnRxg8BgJs62e","symbol":"CELO"},{"mint":"EsPKhGTMf3bGoy4Qm7pCv3UCcWqAmbC1UGHBTDxRjjD4","symbol":"FTM"},{"mint":"EdAhkbj5nF9sRM7XN7ewuW8C9XEUMs8P7cnoQ57SYE96","symbol":"FAB"},{"mint":"ZScHuTtqZukUrtZS43teTKGs2VqkKL8k4QCouR2n6Uo","symbol":"wstETH"},{"mint":"HBB111SCo9jkCejsZfz8Ec8nH7T6THF8KEKSnvwT6XK6","symbol":"HBB"},{"mint":"8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh","symbol":"COPE"},{"mint":"5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm","symbol":"scnSOL"},{"mint":"7Q2afV64in6N6SeZsAAB81TJzwDoD6zpqmHkzi9Dcavn","symbol":"JSOL"},{"mint":"5Wsd311hY8NXQhkt9cWHwTnqafk7BGEbLu8Py3DSnPAr","symbol":"CMFI"},{"mint":"2HeykdKjzHKGm2LKHw8pDYwjKPiFEoXAz74dirhUgQvq","symbol":"SAO"},{"mint":"4SZjjNABoqhbd4hnapbvoEPEqT8mnNkfbEoAwALf1V8t","symbol":"CAVE"},{"mint":"MEANeD3XDdUmNMsRGjASkSWdC8prLYsoRJ61pPeHctD","symbol":"MEAN"},{"mint":"UNQtEecZ5Zb4gSSVHCAWUQEoNnSVEbWiKCi1v9kdUJJ","symbol":"UNQ"},{"mint":"Lrxqnh6ZHKbGy3dcrCED43nsoLkM1LTzU2jRfWe8qUC","symbol":"LARIX"},{"mint":"METAmTMXwdb8gYzyCPfXXFmZZw4rUsXX58PNsDg7zjL","symbol":"SLC"},{"mint":"GFX1ZjR2P15tmrSwow6FjyDYcEkoFb4p4gJCpLBjaxHD","symbol":"GOFX"},{"mint":"FANTafPFBAt93BNJVpdu25pGPmca3RfwdsDsRrT3LX1r","symbol":"FANT"},{"mint":"SuperbZyz7TsSdSoFAZ6RYHfAWe9NmjXBLVQpS8hqdx","symbol":"SB"},{"mint":"xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW","symbol":"SLIM"},{"mint":"4ThReWAbAVZjNVgs5Ui9Pk3cZ5TYaD9u6Y89fp6EFzoF","symbol":"1SOL"},{"mint":"seedEDBqu63tJ7PFqvcbwvThrYUkQeqT6NLf81kLibs","symbol":"SEEDED"},{"mint":"iVNcrNE9BRZBC9Aqf753iZiZfbszeAVUoikgT9yvr2a","symbol":"IVN"},{"mint":"StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT","symbol":"STEP"},{"mint":"F3nefJBcejYbtdREjui1T9DPh5dBgpkKq7u2GAAMXs5B","symbol":"AART"},{"mint":"8upjSpvjcdpuzhfR1zriwg5NXkwDruejqNE9WNbPRtyA","symbol":"GRAPE"},{"mint":"TuLipcqtGVXP9XR62wM8WWCm6a9vhLs7T1uoWBk6FDs","symbol":"TULIP"},{"mint":"Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1","symbol":"SBR"},{"mint":"MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac","symbol":"MNGO"},{"mint":"SUNNYWgPQmFxe9wTZzNK7iPnJ3vYDrkgnxJRJm1s3ag","symbol":"SUNNY"},{"mint":"4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R","symbol":"RAY"},{"mint":"AGFEad2et2ZJif9jaGpdMixQqvW5i81aBdvKe7PHNfz3","symbol":"FTT"},{"mint":"SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt","symbol":"SRM"},{"mint":"PoRTjZMPXb9T7dyU7tpLEZRQj7e6ssfAE62j2oQuc6y","symbol":"PORT"},{"mint":"MAPS41MDahZ9QdKXhVa4dWB9RuyfV4XqhyAZ8XcYepb","symbol":"MAPS"},{"mint":"ETAtLmCmsoiEEKfNrHKJ2kYy3MoABhU6NQvpSfij5tDs","symbol":"MEDIA"},{"mint":"kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6","symbol":"KIN"},{"mint":"JET6zMJWkCN9tpRT2v2jfAmm5VnQFDpUBCyaKojmGtz","symbol":"JET"},{"mint":"AURYydfxJib1ZkTir1Jn1J9ECYUtjb6rKQVmtYaixWPP","symbol":"AURY"},{"mint":"SLNDpmoWTVADgEdndyvWzroNL7zSi1dF9PC3xHGtPwp","symbol":"SLND"},{"mint":"ANAxByE6G2WjFp7A4NqtWYXb3mgruyzZYg3spfxe6Lbo","symbol":"ANA"},{"mint":"SLRSSpSLUTP7okbCUBYStWCo1vUgyt775faPqz8HUMr","symbol":"SLRS"},{"mint":"G9tt98aYSznRk7jWsfuz9FnTdokxS6Brohdo9hSmjTRB","symbol":"PUFF"},{"mint":"zebeczgi5fSEtbpfQKVZKCJ3WgYXxjkMUkNNx7fLKAF","symbol":"ZBC"},{"mint":"AG5j4hhrd1ReYi7d1JsZL8ZpcoHdjXvc8sdpWF74RaQh","symbol":"svtOKAY"},{"mint":"Ez2zVjw85tZan1ycnJ5PywNNxR6Gm4jbXQtZKyQNu3Lv","symbol":"fUSDC"},{"mint":"svtMpL5eQzdmB3uqK9NXaQkq8prGZoKQFNVJghdWCkV","symbol":"SVT"},{"mint":"AUrMpCDYYcPuHhyNX8gEEqbmDPFUpBpHrNW3vPeCFn5Z","symbol":"AVAX"},{"mint":"kiTkNc7nYAu8dLKjQFYPx3BqdzwagZGBUrcb7d4nbN5","symbol":"depKI"},{"mint":"ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx","symbol":"ATLAS"},{"mint":"poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk","symbol":"POLIS"},{"mint":"7kbnvuGBxxj8AG9qp8Scn56muWGaRaFqxg1FsRp3PaFT","symbol":"UXD"},{"mint":"DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ","symbol":"DUST"},{"mint":"EjmyN6qEC1Tf1JxiG1ae7UTJhUxSwk1TCWNWqxWV4J6o","symbol":"DAI"},{"mint":"UXPhBoR3qG4UCiGNJfV7MqhHyFqKN68g45GoYvAeL2M","symbol":"UXP"},{"mint":"kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc","symbol":"KI"},{"mint":"A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM","symbol":"USDCet"},{"mint":"SNSNkV9zfG5ZKWQs6x4hxvBRV6s8SqMfSGCtECDvdMd","symbol":"SNS"},{"mint":"CDJWUqTcYTVAKXAVXoQZFes5JUFc7owSeq7eMQcDSbo5","symbol":"renBTC"},{"mint":"GEJpt3Wjmr628FqXxTgxMce1pLntcPV4uFi8ksxMyPQh","symbol":"daoSOL"},{"mint":"USDrbBQwQbQ2oWHUPfA8QBHcyVxKUq1xHyXsSLKdUq2","symbol":"USDr"},{"mint":"Hg35Vd8K3BS2pLB3xwC2WqQV8pmpCm3oNRGYP1PEpmCM","symbol":"eSOL"},{"mint":"6naWDMGNWwqffJnnXFLBCLaYu1y5U9Rohe5wwJPHvf1p","symbol":"SCRAP"},{"mint":"FoRGERiW7odcCBGU1bztZi16osPBHjxharvDathL5eds","symbol":"FORGE"},{"mint":"ratioMVg27rSZbSvBopUvsdrGUzeALUfFma61mpxc8J","symbol":"RATIO"},{"mint":"GePFQaZKHcWE5vpxHfviQtH5jgxokSs51Y5Q4zgBiMDs","symbol":"JFI"},{"mint":"iJF17JCu78E51eAgwtCwvgULHh2ZqCeRrcFP7wgcc6w","symbol":"I-JFI-Q4"},{"mint":"jJF1SrhzpyqYawE9ruSVKrHjfxjaG5TUMFB5vnXUWVm","symbol":"J-JFI"},{"mint":"jRAYPwLn4ZRGRSKu7GWu6B3Qx3Vj2JU88agUweEceyo","symbol":"J-RAY"},{"mint":"iRAYYHCNhEpbDiVt6QKK3Q57DMgw4p8zEKsVz3WfMjW","symbol":"I-RAY-Q4"}];
         const SYMBOLS = new Map(); TOKENS_JSON.map((t) => SYMBOLS.set(t.mint, t.symbol));
-        const get_symbol = (pubkey) => { let b58 = pubkey.toBase58(); return SYMBOLS.get(b58) || (b58.substring(0, 4) + "..." + b58.substring(b58.length-4)); }
+    </script>
 
-        let cached_positions;
+    <!-- INSTRUCTION UTIL -->
+    <script>
+        function to_instruction(instructions=[], cleanup_instructions=[], signers=[]) {
+          return {
+            instructions,
+            cleanup_instructions,
+            signers,
+          };
+        }
 
+        async function to_transaction(connection, payer, instructions) {
+          const blockhash = await connection.getLatestBlockhash();
+          const tx = new solanaWeb3.Transaction({feePayer: payer, ...blockhash});
+          instructions.filter((ix) => ix.instructions.length > 0).map((ix) => tx.add(...ix.instructions));
+          instructions.filter((ix) => ix.cleanup_instructions.length > 0).reverse().map((ix) => tx.add(...ix.cleanup_instructions));
+
+          const signers = [];
+          instructions.map((ix) => signers.push(...ix.signers));
+
+          return { tx, signers };
+        }
+
+        function decimal_to_le_uint8array(n, length) {
+          const uint8array = new Uint8Array(length);
+          let remaining = n;
+          for (let i=0; i<length && !remaining.isZero(); i++) {
+            const mod = remaining.modulo(256);
+            uint8array[i] = mod.toNumber();
+            remaining = remaining.sub(mod).div(256);
+          }
+          return uint8array;
+        }
+
+        function decimal_to_u128_le_uint8array(n) {
+          return decimal_to_le_uint8array(n, 16);
+        }
+
+        function decimal_to_u64_le_uint8array(n) {
+          return decimal_to_le_uint8array(n, 8);
+        }
+
+        function merge_uint8arrays(uint8arrays) {
+          const length = uint8arrays.reduce((prev, curr) => prev += curr.length, 0);
+          const merged = new Uint8Array(length);
+          
+          let offset = 0;
+          for (let i=0; i<uint8arrays.length; i++) {
+            merged.set(uint8arrays[i], offset);
+            offset += uint8arrays[i].length;
+          }
+          return merged;
+        }
+    </script>
+    
+    <!-- TOKEN UTIL -->
+    <script>
         function to_ui_amount(u64_amount, decimals) {
           return u64_amount.div(Decimal.pow(10, decimals));
         }
+
+        function adjust_for_slippage(u64_amount, slippage) {
+          return u64_amount.mul(new Decimal(1).sub(slippage)).floor();
+        }
+
+        function derive_ata(owner, mint) {
+          const seeds = [owner.toBytes(), TOKEN_PROGRAM_ID.toBytes(), mint.toBytes()];
+          const [pubkey, bump] = solanaWeb3.PublicKey.findProgramAddressSync(seeds, ASSOCIATED_TOKEN_PROGRAM_ID);
+          return pubkey;
+        }
+
+        function create_ata_ix(payer, owner, mint) {
+          const ata = derive_ata(owner, mint);
+          const keys = [
+            { pubkey: payer, isSigner: true, isWritable: true },
+            { pubkey: ata, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: false, isWritable: false },
+            { pubkey: mint, isSigner: false, isWritable: false },
+            { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+          ];
+
+          const create_ata_ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+            data: new Uint8Array([0]),
+          });
+
+          return {
+            address: ata,
+            instruction: to_instruction([create_ata_ix])
+          };
+        }
+
+        async function create_wsta_ix(connection, payer, owner, lamports) {
+          const ACCOUNT_LEN = 165;
+          const keypair = solanaWeb3.Keypair.generate();
+          const rent_lamports = await connection.getMinimumBalanceForRentExemption(ACCOUNT_LEN);
+
+          const create_account_ix = solanaWeb3.SystemProgram.createAccount({
+            fromPubkey: payer,
+            lamports: rent_lamports + lamports,
+            newAccountPubkey: keypair.publicKey,
+            programId: TOKEN_PROGRAM_ID,
+            space: ACCOUNT_LEN,
+          });
+
+          const initialize_account_ix = new solanaWeb3.TransactionInstruction({
+            keys: [
+              { pubkey: keypair.publicKey, isSigner: false, isWritable: true },
+              { pubkey: WRAPPED_SOL_MINT, isSigner: false, isWritable: false },
+              { pubkey: owner, isSigner: false, isWritable: false },
+              { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+            ],
+            programId: TOKEN_PROGRAM_ID,
+            data: new Uint8Array([1]),
+          });
+
+          const close_account_ix = new solanaWeb3.TransactionInstruction({
+            keys: [
+              { pubkey: keypair.publicKey, isSigner: false, isWritable: true },
+              { pubkey: owner, isSigner: false, isWritable: true },
+              { pubkey: owner, isSigner: true, isWritable: false },
+            ],
+            programId: TOKEN_PROGRAM_ID,
+            data: new Uint8Array([9]),
+          });
+
+          return {
+            address: keypair.publicKey,
+            instruction: to_instruction([create_account_ix, initialize_account_ix], [close_account_ix], [keypair])
+          };
+        }
+
+        async function resolve_or_create_ata(connection, payer, owner, mint, lamports=0) {
+          // WSOL
+          if ( mint.equals(WRAPPED_SOL_MINT) ) return await create_wsta_ix(connection, payer, owner, lamports);
+
+          // ATA already created
+          const ata = derive_ata(owner, mint);
+          const created = await connection.getAccountInfo(ata);
+          if ( created !== null ) return { address: ata, instruction: to_instruction() };
+
+          // create ATA
+          return create_ata_ix(payer, owner, mint);
+        }
+    </script>
+
+    <!-- WHIRLPOOL SPECIFIC -->
+    <script>
+        const WHIRLPOOL_PROGRAM_ID = new solanaWeb3.PublicKey("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
+        const DEPRECATED_WHIRLPOOLS_CONFIG = new solanaWeb3.PublicKey("4NPRn2WVyyCrKEQBFaog8dvTjPLK8ETddrZUyRLq61Bo");
+        const DEFAULT_SLIPPAGE = new Decimal("0.01"); // 1%
+        const TICKARRAY_SIZE = 88;
 
         function get_position_pubkey(position_mint_pubkey) {
           const seeds = [new TextEncoder().encode("position"), position_mint_pubkey.toBytes()];
@@ -30,8 +221,28 @@
           return pubkey;
         }
 
+        function get_tickarray_pubkey(whirlpool_pubkey, start_tick_index) {
+          const seeds = [
+            new TextEncoder().encode("tick_array"),
+            whirlpool_pubkey.toBytes(),
+            new TextEncoder().encode(start_tick_index.toString())
+          ];
+          const [pubkey, bump] = solanaWeb3.PublicKey.findProgramAddressSync(seeds, WHIRLPOOL_PROGRAM_ID);
+          return pubkey;
+        }
+
         function get_u128_decimal(le_uint8array) {
           return new Decimal("0x" + le_uint8array.reverse().toString("hex"));
+        }
+
+        function is_reward_initialized(token_mint, token_vault) {
+          return !solanaWeb3.PublicKey.default.equals(token_mint) && !solanaWeb3.PublicKey.default.equals(token_vault);
+        }
+
+        function get_start_tick_index(tick_index, tick_spacing) {
+          const ticks_in_array = TICKARRAY_SIZE * tick_spacing;
+          const real_index = Math.floor(tick_index / ticks_in_array);
+          return real_index * ticks_in_array;
         }
 
         function parse_mint_account(data_uint8array) {
@@ -56,12 +267,12 @@
 
           let offset = 8;
           const whirlpool = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32;
+          const position_mint = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
           const liquidity = get_u128_decimal(data_uint8array.slice(offset, offset+16)); offset += 16;
           const tick_lower_index = data_view.getInt32(offset, true); offset += 4;
           const tick_upper_index = data_view.getInt32(offset, true); offset += 4;
           
-          return { whirlpool, tick_lower_index, tick_upper_index, liquidity };
+          return { whirlpool, position_mint, tick_lower_index, tick_upper_index, liquidity };
         }
 
         function parse_whirlpool_account(data_uint8array) {
@@ -93,26 +304,154 @@
           //     pub growth_global_x64: u128,         // 16
           let offset = 8;
           const whirlpools_config = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 1 + 2 + 2 + 2 + 2 + 16;
+          offset += 1;
+          const tick_spacing = data_view.getUint16(offset, true); offset += 2;
+          offset += 2 + 2 + 2 + 16;
           const sqrt_price = get_u128_decimal(data_uint8array.slice(offset, offset+16)); offset += 16;
           offset += 4 + 8 + 8;
           const token_mint_a = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32 + 16;
+          const token_vault_a = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 16;
           const token_mint_b = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32 + 16 + 8;
+          const token_vault_b = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 16 + 8;
           const token_mint_r0 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32 + 32 + 16 + 16;
+          const token_vault_r0 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 16 + 16;
           const token_mint_r1 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32 + 32 + 16 + 16;
+          const token_vault_r1 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 16 + 16;
           const token_mint_r2 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
-          offset += 32 + 32 + 16 + 16;
+          const token_vault_r2 = new solanaWeb3.PublicKey(data_uint8array.slice(offset, offset+32)); offset += 32;
+          offset += 32 + 16 + 16;
 
-          return { whirlpools_config, sqrt_price, token_mint_a, token_mint_b, token_mint_r0, token_mint_r1, token_mint_r2 };
+          return {
+            whirlpools_config,
+            tick_spacing,
+            sqrt_price,
+            token_mint_a, token_mint_b, token_mint_r0, token_mint_r1, token_mint_r2,
+            token_vault_a, token_vault_b, token_vault_r0, token_vault_r1, token_vault_r2,
+          };
+        }
+
+        function update_fees_and_rewards_ix(whirlpool_pubkey, position_pubkey, tickarray_lower_pubkey, tickarray_upper_pubkey) {
+          const keys = [
+            { pubkey: whirlpool_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_pubkey, isSigner: false, isWritable: true },
+            { pubkey: tickarray_lower_pubkey, isSigner: false, isWritable: false },
+            { pubkey: tickarray_upper_pubkey, isSigner: false, isWritable: false },
+          ];
+
+          const ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: WHIRLPOOL_PROGRAM_ID,
+            data: new Uint8Array([0x9a, 0xe6, 0xfa, 0x0d, 0xec, 0xd1, 0x4b, 0xdf]), // ANCHOR INSTRUCTION CODE
+          });
+
+          return to_instruction([ix]);
+        }
+
+        function collect_fees_ix(whirlpool_pubkey, position_authority, position_pubkey, position_token_account, owner_a, vault_a, owner_b, vault_b) {
+          const keys = [
+            { pubkey: whirlpool_pubkey, isSigner: false, isWritable: false },
+            { pubkey: position_authority, isSigner: true, isWritable: false },
+            { pubkey: position_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_token_account, isSigner: false, isWritable: false },
+            { pubkey: owner_a, isSigner: false, isWritable: true },
+            { pubkey: vault_a, isSigner: false, isWritable: true },
+            { pubkey: owner_b, isSigner: false, isWritable: true },
+            { pubkey: vault_b, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          ];
+
+          const ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: WHIRLPOOL_PROGRAM_ID,
+            data: new Uint8Array([0xa4, 0x98, 0xcf, 0x63, 0x1e, 0xba, 0x13, 0xb6]), // ANCHOR INSTRUCTION CODE
+          });
+
+          return to_instruction([ix]);
+        }
+
+        function collect_reward_ix(whirlpool_pubkey, position_authority, position_pubkey, position_token_account, owner_ri, vault_ri, reward_index) {
+          const keys = [
+            { pubkey: whirlpool_pubkey, isSigner: false, isWritable: false },
+            { pubkey: position_authority, isSigner: true, isWritable: false },
+            { pubkey: position_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_token_account, isSigner: false, isWritable: false },
+            { pubkey: owner_ri, isSigner: false, isWritable: true },
+            { pubkey: vault_ri, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          ];
+
+          const ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: WHIRLPOOL_PROGRAM_ID,
+            data: merge_uint8arrays([
+              new Uint8Array([0x46, 0x05, 0x84, 0x57, 0x56, 0xeb, 0xb1, 0x22]), // ANCHOR INSTRUCTION CODE
+              new Uint8Array([reward_index]),
+            ]),
+          });
+
+          return to_instruction([ix]);
+        }
+
+        function decrease_liquidity_ix(whirlpool_pubkey, position_authority, position_pubkey, position_token_account, owner_a, vault_a, owner_b, vault_b, tickarray_lower_pubkey, tickarray_upper_pubkey, liquidity, min_a, min_b) {
+          const keys = [
+            { pubkey: whirlpool_pubkey, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: position_authority, isSigner: true, isWritable: false },
+            { pubkey: position_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_token_account, isSigner: false, isWritable: false },
+            { pubkey: owner_a, isSigner: false, isWritable: true },
+            { pubkey: owner_b, isSigner: false, isWritable: true },
+            { pubkey: vault_a, isSigner: false, isWritable: true },
+            { pubkey: vault_b, isSigner: false, isWritable: true },
+            { pubkey: tickarray_lower_pubkey, isSigner: false, isWritable: true },
+            { pubkey: tickarray_upper_pubkey, isSigner: false, isWritable: true },
+          ];
+
+          const ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: WHIRLPOOL_PROGRAM_ID,
+            data: merge_uint8arrays([
+              new Uint8Array([0xa0, 0x26, 0xd0, 0x6f, 0x68, 0x5b, 0x2c, 0x01]), // ANCHOR INSTRUCTION CODE
+              decimal_to_u128_le_uint8array(liquidity),
+              decimal_to_u64_le_uint8array(min_a),
+              decimal_to_u64_le_uint8array(min_b),
+            ]),
+          });
+
+          return to_instruction([ix]);
+        }
+
+        function close_position_ix(position_authority, receiver, position_pubkey, position_mint_pubkey, position_token_account) {
+          const keys = [
+            { pubkey: position_authority, isSigner: true, isWritable: false },
+            { pubkey: receiver, isSigner: false, isWritable: true },
+            { pubkey: position_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_mint_pubkey, isSigner: false, isWritable: true },
+            { pubkey: position_token_account, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          ];
+
+          const ix = new solanaWeb3.TransactionInstruction({
+            keys,
+            programId: WHIRLPOOL_PROGRAM_ID,
+            data: new Uint8Array([0x7b, 0x86, 0x51, 0x00, 0x31, 0x44, 0x62, 0x62]), // ANCHOR INSTRUCTION CODE
+          });
+
+          return to_instruction([ix]);
         }
 
         function tick_index_to_sqrt_price_x64(tick_index) {
           const x64 = Decimal.pow(2, 64);
           return Decimal.pow(new Decimal("1.0001"), tick_index).sqrt().mul(x64).floor();
+        }
+
+        function tick_index_to_price(tick_index, decimals_a, decimals_b) {
+          const decimal_adjust = Decimal.pow(10, decimals_a - decimals_b);
+          return Decimal.pow(new Decimal("1.0001"), tick_index).mul(decimal_adjust);
         }
 
         function get_token_amounts_from_liquidity(liquidity, current_sqrt_price_x64, lower_sqrt_price_x64, upper_sqrt_price_x64) {
@@ -127,6 +466,14 @@
           const amount_b = liquidity.mul(current.sub(lower)).div(x64).floor();
 
           return { amount_a, amount_b };
+        }
+
+        function decrease_liquidity_quote(liquidity, current_sqrt_price_x64, lower_sqrt_price_x64, upper_sqrt_price_x64, slippage) {
+          const amounts = get_token_amounts_from_liquidity(liquidity, current_sqrt_price_x64, lower_sqrt_price_x64, upper_sqrt_price_x64);
+          return {
+            amount_a: adjust_for_slippage(amounts.amount_a, slippage),
+            amount_b: adjust_for_slippage(amounts.amount_b, slippage),
+          };
         }
 
         async function list_whirlpool_positions(connection, wallet_pubkey) {
@@ -187,45 +534,243 @@
           });
         }
 
+        async function build_close_position_tx(connection, wallet_pubkey, position, amounts) {
+          const whirlpool_data = position.whirlpool_data;
+          const position_token_account = derive_ata(wallet_pubkey, position.position_mint)
+          const tickarray_lower_pubkey = get_tickarray_pubkey(position.whirlpool, get_start_tick_index(position.tick_lower_index, whirlpool_data.tick_spacing));
+          const tickarray_upper_pubkey = get_tickarray_pubkey(position.whirlpool, get_start_tick_index(position.tick_upper_index, whirlpool_data.tick_spacing));
+          const r0_initialized = is_reward_initialized(whirlpool_data.token_mint_r0, whirlpool_data.token_vault_r0);
+          const r1_initialized = is_reward_initialized(whirlpool_data.token_mint_r1, whirlpool_data.token_vault_r1);
+          const r2_initialized = is_reward_initialized(whirlpool_data.token_mint_r2, whirlpool_data.token_vault_r2);
+
+          const tokens_to_be_collected = new Set();
+          tokens_to_be_collected.add(whirlpool_data.token_mint_a.toBase58());
+          tokens_to_be_collected.add(whirlpool_data.token_mint_b.toBase58());
+          if ( r0_initialized ) tokens_to_be_collected.add(whirlpool_data.token_mint_r0.toBase58());
+          if ( r1_initialized ) tokens_to_be_collected.add(whirlpool_data.token_mint_r1.toBase58());
+          if ( r2_initialized ) tokens_to_be_collected.add(whirlpool_data.token_mint_r2.toBase58());
+
+          const ixs = [];
+          const token_account_map = new Map();
+          for (let b58 of tokens_to_be_collected) {
+            const mint = new solanaWeb3.PublicKey(b58);
+            const {address, instruction} = await resolve_or_create_ata(connection, wallet_pubkey, wallet_pubkey, mint);
+            ixs.push(instruction);
+            token_account_map.set(b58, address);
+          }
+
+          ixs.push(update_fees_and_rewards_ix(
+            position.whirlpool,
+            position.pubkey,
+            tickarray_lower_pubkey,
+            tickarray_upper_pubkey
+          ));
+
+          ixs.push(collect_fees_ix(
+            position.whirlpool,
+            wallet_pubkey,
+            position.pubkey,
+            position_token_account,
+            token_account_map.get(whirlpool_data.token_mint_a.toBase58()),
+            whirlpool_data.token_vault_a,
+            token_account_map.get(whirlpool_data.token_mint_b.toBase58()),
+            whirlpool_data.token_vault_b
+          ));
+
+          if ( r0_initialized ) ixs.push(collect_reward_ix(
+            position.whirlpool,
+            wallet_pubkey,
+            position.pubkey,
+            position_token_account,
+            token_account_map.get(whirlpool_data.token_mint_r0.toBase58()),
+            whirlpool_data.token_vault_r0,
+            0
+          ));
+
+          if ( r1_initialized ) ixs.push(collect_reward_ix(
+            position.whirlpool,
+            wallet_pubkey,
+            position.pubkey,
+            position_token_account,
+            token_account_map.get(whirlpool_data.token_mint_r1.toBase58()),
+            whirlpool_data.token_vault_r1,
+            1
+          ));
+
+          if ( r2_initialized ) ixs.push(collect_reward_ix(
+            position.whirlpool,
+            wallet_pubkey,
+            position.pubkey,
+            position_token_account,
+            token_account_map.get(whirlpool_data.token_mint_r2.toBase58()),
+            whirlpool_data.token_vault_r2,
+            2
+          ));
+
+          ixs.push(decrease_liquidity_ix(
+            position.whirlpool,
+            wallet_pubkey,
+            position.pubkey,
+            position_token_account,
+            token_account_map.get(whirlpool_data.token_mint_a.toBase58()),
+            whirlpool_data.token_vault_a,
+            token_account_map.get(whirlpool_data.token_mint_b.toBase58()),
+            whirlpool_data.token_vault_b,
+            tickarray_lower_pubkey,
+            tickarray_upper_pubkey,
+            position.liquidity,
+            amounts.amount_a,
+            amounts.amount_b
+          ));
+
+          ixs.push(close_position_ix(
+            wallet_pubkey,
+            wallet_pubkey,
+            position.pubkey,
+            position.position_mint,
+            position_token_account
+          ));
+
+          return to_transaction(connection, wallet_pubkey, ixs);
+        }
+    </script>
+
+    <!-- UI LOGIC -->
+    <script>
+        let cached_positions;
+        let cached_wallet_pubkey;
+        let cached_wallet_provider;
+
+        function get_short_address(pubkey, prefix_suffix_length=4) {
+          const b58 = pubkey.toBase58();
+          return b58.substring(0, prefix_suffix_length) + "..." + b58.substring(b58.length-prefix_suffix_length);
+        }
+
+        function get_symbol(pubkey) {
+          const b58 = pubkey.toBase58();
+          return SYMBOLS.get(b58) || get_short_address(pubkey);
+        }
+
+        function get_phantom() {
+          if ( window.phantom?.solana?.isPhantom ) return window.phantom?.solana;
+          return null;
+        }
+
+        function get_solflare() {
+          if ( window.solflare?.isSolflare ) return window.solflare;
+          return null;
+        }
+
+        async function connect() {
+          const wallet_type = $("#wallet").val();
+
+          try {
+            notify_info(`connecting to ${wallet_type}...`);
+            let provider, pubkey;
+            switch ( wallet_type ) {
+            case "phantom":
+              provider = get_phantom();
+              resp = await provider.connect();
+              pubkey = resp.publicKey;
+              break;
+            case "solflare":
+              provider = get_solflare();
+              await provider.connect();
+              pubkey = provider.publicKey;
+            }
+
+            cached_wallet_provider = provider;
+            cached_wallet_pubkey = pubkey;
+            $("#wallet_address").text(get_short_address(pubkey, 8));
+
+            notify_success(`connected`);
+          } catch ( err ) {
+            console.log("err.message", err.message);
+            notify_failed(`connecting to ${wallet_type} failed`);
+            return;
+          }
+
+          list_positions();
+        }
+
         async function list_positions() {
-          const wallet_pubkey = new solanaWeb3.PublicKey($("#wallet_address").val().trim());
+          const wallet_pubkey = cached_wallet_pubkey;
           const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
 
-          const positions = await list_whirlpool_positions(connection, wallet_pubkey);
-          cached_positions = positions;
+          try {
+            notify_info(`listing positions...`);
+
+            const positions = await list_whirlpool_positions(connection, wallet_pubkey);
+            positions.sort((a, b) => {
+              if ( a.whirlpool.toBase58() < b.whirlpool.toBase58() ) return -1;
+              if ( a.whirlpool.toBase58() > b.whirlpool.toBase58() ) return +1;
+              if ( a.position_mint.toBase58() < b.position_mint.toBase58() ) return -1;
+              if ( a.position_mint.toBase58() > b.position_mint.toBase58() ) return +1;
+              return 0;
+            });
+
+            cached_positions = positions;
+            notify_success(`${cached_positions.length} positions found`);
+          } catch ( err ) {
+            console.log("err.message", err.message);
+            notify_failed(`listing positions failed`);
+          }
 
           // UI rebuild
           $("#positions").find("tr").remove();
-          for (let i=0; i<positions.length; i++) {
-            const p = positions[i];
+          for (let i=0; i<cached_positions.length; i++) {
+            const p = cached_positions[i];
 
             const deprecated = p.whirlpool_data.whirlpools_config.equals(DEPRECATED_WHIRLPOOLS_CONFIG);
             const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
             const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
-            const amounts = get_token_amounts_from_liquidity(
+
+            const price_lower = tick_index_to_price(p.tick_lower_index, p.decimals_a, p.decimals_b).toFixed(p.decimals_b);
+            const price_upper = tick_index_to_price(p.tick_upper_index, p.decimals_a, p.decimals_b).toFixed(p.decimals_b);
+
+            const amounts = decrease_liquidity_quote(
               p.liquidity,
               p.whirlpool_data.sqrt_price,
               tick_index_to_sqrt_price_x64(p.tick_lower_index),
-              tick_index_to_sqrt_price_x64(p.tick_upper_index)
+              tick_index_to_sqrt_price_x64(p.tick_upper_index),
+              DEFAULT_SLIPPAGE
             );
             const ui_amount_a = to_ui_amount(amounts.amount_a, p.decimals_a);
             const ui_amount_b = to_ui_amount(amounts.amount_b, p.decimals_b);
 
             const html = `
-              <tr>
-                <td>${p.pubkey.toBase58()}</td>
+              <tr class="${deprecated ? "deprecated" : ""}">
+                <td>
+                  <a href="https://solscan.io/account/${p.position_mint.toBase58()}" target="_blank">
+                  <span title="${p.pubkey.toBase58()}">${get_short_address(p.position_mint, 5)}</span>
+                  </a>
+                </td>
                 <td>${deprecated}</td>
-                <td>${p.whirlpool.toBase58()}</td>
+                <td>
+                  <a href="https://solscan.io/account/${p.whirlpool.toBase58()}" target="_blank">
+                  ${symbol_a}/${symbol_b}
+                  (<span title="${p.whirlpool.toBase58()}">${get_short_address(p.whirlpool, 5)}</span>)
+                  </a>
+                </td>
+                <td>${price_lower} - ${price_upper} ${symbol_b}</td>
                 <td>${p.liquidity.toString()}</td>
-                <td>${ui_amount_a} ${symbol_a}</td>
-                <td>${ui_amount_b} ${symbol_b}</td>
-                <td><button onclick="close_position(${i});">close</button></td>
+                <td>${ui_amount_a} ${symbol_a} <br> ${ui_amount_b} ${symbol_b}</td>
+                <td><button class="close" onclick="close_position(${i});">close</button></td>
               </tr>`;
+            $("#positions").append(html);
+          }
+
+          if ( cached_positions.length == 0 ) {
+            const html = `<tr><td class="empty-table" colspan="7">no position found</td></tr>`;
             $("#positions").append(html);
           }
         }
 
         async function close_position(cached_position_index) {
+          const wallet_provider = cached_wallet_provider;
+          const wallet_pubkey = cached_wallet_pubkey;
+          const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
+
           const p = cached_positions[cached_position_index];
           const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
           const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
@@ -240,43 +785,83 @@
 
           const msg = "Are you sure you want to close the following position?"
                     + `\n`
-                    + `\n Position: ${p.pubkey.toBase58()}`
+                    + `\n Position: ${get_short_address(p.position_mint, 5)}`
                     + `\n Liquidity: ${p.liquidity.toString()} (100%)`
-                    + `\n A: ${ui_amount_a} ${symbol_a}`
-                    + `\n B: ${ui_amount_b} ${symbol_b}`;
+                    + `\n`
+                    + `\n TokenA: ${ui_amount_a} ${symbol_a}`
+                    + `\n TokenB: ${ui_amount_b} ${symbol_b}`
+                    + `\n`
+                    + `\n* Fees and Rewards will be collected`
+                    + `\n* Position NFT will be burned`;
 
           const confirm = window.confirm(msg);
           if ( ! confirm ) return;
 
-          window.alert("connect wallet & close position (NOT IMPLEMENTED YET!)");
-        }
+          try {
+            notify_info("close position prepairing...");
+            const payload = await build_close_position_tx(connection, wallet_pubkey, p, amounts);
+            const tx = payload.tx;
+            tx.partialSign(...payload.signers);
+            const signed_tx = await wallet_provider.signTransaction(tx);
 
+            notify_info("close position requesting...");
+            const signature = await connection.sendRawTransaction(signed_tx.serialize());
+
+            const latest_blockhash = await connection.getLatestBlockhash();
+            await connection.confirmTransaction({signature, ...latest_blockhash}, "confirmed");
+            notify_success("close position success");
+          } catch ( err ) {
+            console.log("err.message", err.message);
+            notify_failed("close position failed");
+            return;
+          }
+
+          list_positions();
+        }
     </script>
 </head>
 <body>
 
-<h1>Whirlpool Close Position (for Rescue Purpose)</h1>
-<p>
-  Wallet PublicKey: <input type="text" size="60" id="wallet_address" value="r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6" /><button onclick="list_positions();">list positions</button>
-</p>
-<ul style="font-size: small;">
-  <li>normal wallet: r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6</li>
-  <li>wallet with deprecated position: 3bgNmKXbjyQwWbwf2wvw416nku9tNv8FPQMwYhB4P6UF</li>
+<h1>🌀Whirlpool Position Closer</h1>
+<h2>What is this?</h2>
+<ul>
+<li style="color: darkred;">You should only use pages that have been linked to by multiple Community Managers or Developer Advocates in a public Discord, or that you have verified the content of the script yourself.</li>
+<li>This page provides the functionality to close positions on whirlpool which has been deprecated.</li>
+<li>This page is on Permaweb(arweave.net) and its content is immutable.</li>
+<li>The script for this page is written as plain text within the page and can be verified as safe by the community.</li>
 </ul>
+
 <hr>
+
+<h2>Wallet</h2>
+<p>
+  <select id="wallet">
+    <option value="phantom" selected>Phantom</option>
+    <option value="solflare">Solflare</option>
+  </select>
+  <button class="connect" onclick="connect();">connect & list positions</button>
+</p>
+<p style="font-size: small;">
+  Wallet PublicKey: <span id="wallet_address"></span>
+</p>
+
+<hr>
+
+<h2>Positions</h2>
 <table border="1" style="font-size: x-small;">
     <thead>
         <tr>
-            <th>position pubkey</th>
+            <th>position</th>
             <th>deprecated</th>
             <th>pool</th>
+            <th>range</th>
             <th>liquidity</th>
-            <th>tokenA</th>
-            <th>tokenB</th>
+            <th>tokenA & B</th>
             <th>close</th>
         </tr>
     </thead>
-    <tbody id="positions">
+    <tbody id="positions" style="text-align: right;">
+    <tr><td class="empty-table" colspan="7">wallet not connected</td></tr>
     </tbody>
 </table>
 
