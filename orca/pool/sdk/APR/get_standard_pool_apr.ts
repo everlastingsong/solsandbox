@@ -6,6 +6,10 @@ import fetch from 'node-fetch'; // npm install node-fetch@2 (v2)
 import Decimal from 'decimal.js';
 
 const RPC_ENDPOINT_URL = "https://ssc-dao.genesysgo.net/";
+const ORCA_STANDARD_POOL_CONFIG_ENDPOINT_URL = "https://api.orca.so/configs";
+const ORCA_STANDARD_POOL_STATS_ENDPOINT_URL = "https://api.orca.so/allPools";
+const COINGECKO_API_V3_BASE_URL = "https://api.coingecko.com/api/v3";
+
 const APR_BASE_DURATION = "week"; // "day"(24h) | "week"(7D) | "month"(30D)
 
 async function get_accounts(connection: Connection, pubkeys: PublicKey[]) {
@@ -37,7 +41,7 @@ async function main() {
   
   // get ORCA Standard Pool Configs
   console.log("get configs...");
-  const raw_configs = await (await fetch("https://api.orca.so/configs")).json();
+  const raw_configs = await (await fetch(ORCA_STANDARD_POOL_CONFIG_ENDPOINT_URL)).json();
 
   // token definition
   // build map (mint to token, symbol to token)
@@ -63,14 +67,14 @@ async function main() {
 
   // pool stats
   console.log("get pool stats...");
-  const raw_pool_stats = await (await fetch("https://api.orca.so/allPools")).json();
+  const raw_pool_stats = await (await fetch(ORCA_STANDARD_POOL_STATS_ENDPOINT_URL)).json();
   const pool_stats = {};
   Object.keys(raw_pool_stats).forEach((p) => pool_stats[raw_pool_stats[p].poolAccount] = raw_pool_stats[p]);
 
   // get usd price of tokens from coingecko
   console.log("get token usd price from coingecko...");
   const ids = Object.keys(raw_configs.coingeckoIds).map((t) => raw_configs.coingeckoIds[t]).join(",");
-  const coingecko = await (await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`)).json();
+  const coingecko = await (await fetch(`${COINGECKO_API_V3_BASE_URL}/simple/price?ids=${ids}&vs_currencies=usd`)).json();
   const token_usd_prices = {};
   Object.keys(coingecko).forEach((t) => token_usd_prices[t] = coingecko[t].usd);
 
