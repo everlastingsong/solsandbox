@@ -12,11 +12,10 @@
     <style>
       body { font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: small; background-color: white; }
       thead { background-color: #eeeeee; }
-      tr.deprecated { background-color: #ffcccc; }
+      tr.above, tr.below { background-color: #ffcccc; }
       a { text-decoration: none; }
       a, a:hover, a:visited { color: inherit; }
       td.empty-table { min-width: 500px; height: 100px; text-align: center; }
-      button.close { color: darkred; }
     </style>
 
     <!-- toastr -->
@@ -639,7 +638,6 @@
     <script>
         let cached_positions;
         let cached_wallet_pubkey;
-        let cached_wallet_provider;
 
         function get_short_address(pubkey, prefix_suffix_length=4) {
           const b58 = pubkey.toBase58();
@@ -651,47 +649,34 @@
           return SYMBOLS.get(b58) || get_short_address(pubkey);
         }
 
-        function get_phantom() {
-          if ( window.phantom?.solana?.isPhantom ) return window.phantom?.solana;
-          return null;
+        function get_position_status(current_sqrt_price, tick_lower_index, tick_upper_index) {
+          const lower_sqrt_price = tick_index_to_sqrt_price_x64(tick_lower_index);
+          const upper_sqrt_price = tick_index_to_sqrt_price_x64(tick_upper_index);
+
+          if ( current_sqrt_price.lt(lower_sqrt_price) ) return { status: "below", message: "Out of Range(Below)" };
+          if ( current_sqrt_price.gt(upper_sqrt_price) ) return { status: "above", message: "Out of Range(Above)" };
+          return { status: "in", message: "In Range" };
         }
 
-        function get_solflare() {
-          if ( window.solflare?.isSolflare ) return window.solflare;
-          return null;
+        async function init_from_url() {
+          const params = new URLSearchParams(window.location.search);
+          if ( ! params.has("pubkey") ) return;
+
+          $("#pubkey").val(params.get("pubkey"));
+          await list();
         }
 
-        async function connect() {
-          const wallet_type = $("#wallet").val();
-
+        async function list() {
           try {
-            notify_info(`connecting to ${wallet_type}...`);
-            let provider, pubkey;
-            switch ( wallet_type ) {
-            case "phantom":
-              provider = get_phantom();
-              resp = await provider.connect();
-              pubkey = resp.publicKey;
-              break;
-            case "solflare":
-              provider = get_solflare();
-              await provider.connect();
-              pubkey = provider.publicKey;
-              break;
-            }
-
-            cached_wallet_provider = provider;
+            const pubkey = new solanaWeb3.PublicKey($("#pubkey").val());
             cached_wallet_pubkey = pubkey;
             $("#wallet_address").text(get_short_address(pubkey, 8));
-
-            notify_success(`connected`);
           } catch ( err ) {
             console.log("err.message", err.message);
-            notify_failed(`connecting to ${wallet_type} failed`);
+            notify_failed(`invalid pubkey`);
             return;
           }
-
-          list_positions();
+          await list_positions();
         }
 
         async function list_positions() {
@@ -722,7 +707,7 @@
           for (let i=0; i<cached_positions.length; i++) {
             const p = cached_positions[i];
 
-            const deprecated = p.whirlpool_data.whirlpools_config.equals(DEPRECATED_WHIRLPOOLS_CONFIG);
+            const status = get_position_status(p.whirlpool_data.sqrt_price, p.tick_lower_index, p.tick_upper_index);
             const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
             const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
 
@@ -740,13 +725,13 @@
             const ui_amount_b = to_ui_amount(amounts.amount_b, p.decimals_b);
 
             const html = `
-              <tr class="${deprecated ? "deprecated" : ""}">
+              <tr class="${status.status}">
                 <td>
                   <a href="https://solscan.io/account/${p.position_mint.toBase58()}" target="_blank">
                   <span title="${p.pubkey.toBase58()}">${get_short_address(p.position_mint, 5)}</span>
                   </a>
                 </td>
-                <td>${deprecated}</td>
+                <td>${status.message}</td>
                 <td>
                   <a href="https://solscan.io/account/${p.whirlpool.toBase58()}" target="_blank">
                   ${symbol_a}/${symbol_b}
@@ -756,113 +741,48 @@
                 <td>${price_lower} - ${price_upper} ${symbol_b}</td>
                 <td>${p.liquidity.toString()}</td>
                 <td>${ui_amount_a} ${symbol_a} <br> ${ui_amount_b} ${symbol_b}</td>
-                <td><button class="close" onclick="close_position(${i});">close</button></td>
               </tr>`;
             $("#positions").append(html);
           }
 
           if ( cached_positions.length == 0 ) {
-            const html = `<tr><td class="empty-table" colspan="7">no position found</td></tr>`;
+            const html = `<tr><td class="empty-table" colspan="6">no position found</td></tr>`;
             $("#positions").append(html);
           }
         }
 
-        async function close_position(cached_position_index) {
-          const wallet_provider = cached_wallet_provider;
-          const wallet_pubkey = cached_wallet_pubkey;
-          const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
-
-          const p = cached_positions[cached_position_index];
-          const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
-          const symbol_b = get_symbol(p.whirlpool_data.token_mint_b);
-          const amounts = get_token_amounts_from_liquidity(
-            p.liquidity,
-            p.whirlpool_data.sqrt_price,
-            tick_index_to_sqrt_price_x64(p.tick_lower_index),
-            tick_index_to_sqrt_price_x64(p.tick_upper_index)
-          );
-          const ui_amount_a = to_ui_amount(amounts.amount_a, p.decimals_a);
-          const ui_amount_b = to_ui_amount(amounts.amount_b, p.decimals_b);
-
-          const msg = "Are you sure you want to close the following position?"
-                    + `\n`
-                    + `\n Position: ${get_short_address(p.position_mint, 5)}`
-                    + `\n Liquidity: ${p.liquidity.toString()} (100%)`
-                    + `\n`
-                    + `\n TokenA: ${ui_amount_a} ${symbol_a}`
-                    + `\n TokenB: ${ui_amount_b} ${symbol_b}`
-                    + `\n`
-                    + `\n* Fees and Rewards will be collected`
-                    + `\n* Position NFT will be burned`;
-
-          const confirm = window.confirm(msg);
-          if ( ! confirm ) return;
-
-          try {
-            notify_info("close position prepairing...");
-            const payload = await build_close_position_tx(connection, wallet_pubkey, p, amounts);
-            const tx = payload.tx;
-            tx.partialSign(...payload.signers);
-            const signed_tx = await wallet_provider.signTransaction(tx);
-
-            notify_info("close position requesting...");
-            const signature = await connection.sendRawTransaction(signed_tx.serialize());
-
-            const latest_blockhash = await connection.getLatestBlockhash();
-            await connection.confirmTransaction({signature, ...latest_blockhash}, "confirmed");
-            notify_success("close position success");
-          } catch ( err ) {
-            console.log("err.message", err.message);
-            notify_failed("close position failed");
-            return;
-          }
-
-          list_positions();
-        }
+        $(document).ready(() => init_from_url());
     </script>
 </head>
 <body>
 
-<h1>🌀Whirlpool Position Closer</h1>
-<h2>What is this?</h2>
-<ul>
-<li style="color: darkred;">You should only use pages that have been linked to Community Managers or Developer Advocates in a public Discord, or that you have verified the content of the script yourself.</li>
-<li>This page provides the functionality to close positions on whirlpool which has been deprecated.</li>
-<li>This page is on Permaweb(arweave.net) and its content is immutable.</li>
-<li>The script for this page is written as plain text within the page and can be verified as safe by the community.</li>
-</ul>
+<h1>🌀Whirlpool Positions</h1>
 
-<hr>
-
-<h2>Wallet</h2>
+<h2>PublicKey</h2>
 <p>
-  <select id="wallet">
-    <option value="phantom" selected>Phantom</option>
-    <option value="solflare">Solflare</option>
-  </select>
-  <button class="connect" onclick="connect();">connect & list positions</button>
-</p>
-<p style="font-size: small;">
-  Wallet PublicKey: <span id="wallet_address"></span>
+  <input id="pubkey" type="text" size="60">
+  <button class="connect" onclick="list();">list positions</button>
 </p>
 
 <hr>
 
 <h2>Positions</h2>
+<p style="font-size: small;">
+  Wallet PublicKey: <span id="wallet_address"></span>
+</p>
 <table border="1" style="font-size: x-small;">
     <thead>
         <tr>
             <th>position</th>
-            <th>deprecated</th>
+            <th>status</th>
             <th>pool</th>
             <th>range</th>
             <th>liquidity</th>
             <th>tokenA & B</th>
-            <th>close</th>
         </tr>
     </thead>
     <tbody id="positions" style="text-align: right;">
-    <tr><td class="empty-table" colspan="7">wallet not connected</td></tr>
+    <tr><td class="empty-table" colspan="6">no putlic key</td></tr>
     </tbody>
 </table>
 
