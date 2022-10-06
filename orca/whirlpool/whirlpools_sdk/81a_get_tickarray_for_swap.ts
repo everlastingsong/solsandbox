@@ -1,11 +1,38 @@
 import { PublicKey, Connection, Keypair } from "@solana/web3.js";
 import {
     WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
-    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, SwapUtils
+    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, SwapUtils, MAX_SWAP_TICK_ARRAYS, TickUtil
 } from "@orca-so/whirlpools-sdk";
 import { Wallet } from "@project-serum/anchor";
 
 const RPC_ENDPOINT_URL="https://ssc-dao.genesysgo.net"
+
+
+function getTickArrayPublicKeysWithShift(
+  tickCurrentIndex: number,
+  tickSpacing: number,
+  aToB: boolean,
+  programId: PublicKey,
+  whirlpoolAddress: PublicKey
+) {
+  let offset = 0;
+  let tickArrayAddresses: PublicKey[] = [];
+  for (let i = 0; i < MAX_SWAP_TICK_ARRAYS; i++) {
+    let startIndex: number;
+    try {
+      const shift = aToB ? 0 : tickSpacing;
+      startIndex = TickUtil.getStartTickIndex(tickCurrentIndex + shift, tickSpacing, offset);
+    } catch {
+      return tickArrayAddresses;
+    }
+
+    const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, startIndex);
+    tickArrayAddresses.push(pda.publicKey);
+    offset = aToB ? offset - 1 : offset + 1;
+  }
+
+  return tickArrayAddresses;
+}
 
 async function main() {
   const connection = new Connection(RPC_ENDPOINT_URL);
@@ -43,18 +70,8 @@ async function main() {
   const whirlpool_data = (await whirlpool).getData();
   console.log("current_tick_index", whirlpool_data.tickCurrentIndex);
 
-  const getTickArrayPublicKeysWithAdjust = (tick_current_index: number, tick_spacing: number, a_to_b: boolean, program: PublicKey, whirlpool: PublicKey) => {
-    return SwapUtils.getTickArrayPublicKeys(
-      a_to_b ? tick_current_index : (tick_current_index + tick_spacing), // adjust when a_to_b = false
-      tick_spacing,
-      a_to_b,
-      program,
-      whirlpool
-    );
-  }
-
-  const a_to_b_pubkeys = getTickArrayPublicKeysWithAdjust(whirlpool_data.tickCurrentIndex, whirlpool_data.tickSpacing, true,  ORCA_WHIRLPOOL_PROGRAM_ID, whirlpool_key);
-  const b_to_a_pubkeys = getTickArrayPublicKeysWithAdjust(whirlpool_data.tickCurrentIndex, whirlpool_data.tickSpacing, false, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpool_key);
+  const a_to_b_pubkeys = getTickArrayPublicKeysWithShift(whirlpool_data.tickCurrentIndex, whirlpool_data.tickSpacing, true,  ORCA_WHIRLPOOL_PROGRAM_ID, whirlpool_key);
+  const b_to_a_pubkeys = getTickArrayPublicKeysWithShift(whirlpool_data.tickCurrentIndex, whirlpool_data.tickSpacing, false, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpool_key);
 
   console.log("a_to_b: ", a_to_b_pubkeys[0].toBase58(), a_to_b_pubkeys[1].toBase58(), a_to_b_pubkeys[2].toBase58());
   console.log("b_to_a: ", b_to_a_pubkeys[0].toBase58(), b_to_a_pubkeys[1].toBase58(), b_to_a_pubkeys[2].toBase58());
