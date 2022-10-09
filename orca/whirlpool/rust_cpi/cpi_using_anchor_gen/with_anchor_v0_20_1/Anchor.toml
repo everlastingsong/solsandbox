@@ -1,0 +1,12 @@
+[programs.localnet]
+with_anchor_v0_20_1 = "2Ukw3PVhCGvsLYteoZFecwQ7BVqq9A3haJrpdoVf6ipH"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "wallet.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
