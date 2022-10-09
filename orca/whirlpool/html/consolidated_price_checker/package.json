@@ -1,0 +1,25 @@
+{
+  "name": "consolidated_price",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@orca-so/whirlpool-sdk": "^0.4.1",
+    "@solana/spl-token": "^0.1.8",
+    "@types/bn.js": "^5.1.1",
+    "@types/jquery": "^3.5.14",
+    "jquery": "^3.6.1",
+    "node-fetch": "^2.6.7",
+    "ts-loader": "^9.4.1",
+    "tsify": "^5.0.4"
+  },
+  "devDependencies": {
+    "webpack": "^5.74.0"
+  }
+}
