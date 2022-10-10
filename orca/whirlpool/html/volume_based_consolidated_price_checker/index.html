@@ -1,0 +1,64 @@
+<html>
+<head>
+  <title>Volume Based Consolidated Price Checker</title>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: small; background-color: white; }
+    table { font-size: x-small; }
+    thead { background-color: #eeeeee; }
+    td.left-align { text-align: left; }
+    a { text-decoration: none; }
+    a, a:hover, a:visited { color: inherit; }
+    .alert-level1 { background-color: yellow; }
+    .alert-level2 { background-color: orange; }
+    .alert-level3 { background-color: orangered; }
+  </style>
+  <script src="dist/bundle.js"></script>
+</head>
+<body>
+
+<h1>🐳 Volume Based Consolidated Price Checker</h1>
+<p>The price of low liquidity whirlpool may cause the dollar price (consolidated price) of the tokens used by the UI to be incorrect.</p>
+<p>This improvement will de-prioritize prices based on pools with low trade volume.</p>
+
+<h3>Data source</h3>
+<table style="font-size: small;">
+<tr><td>🌀whirlpool price</td><td>: getTokenPrices (Volume Based) </td></tr>
+<tr><td>🐸coingecko price</td><td>: https://api.coingecko.com/api/v3/simple/price</td></tr>
+</table>
+
+<h3>Consolidated Prices</h3>
+<table>
+<tr>
+  <td>Difference between consolidated price and coingecko price:</td>
+  <td class="alert-level1">&gt; 5 %</td>
+  <td class="alert-level2">&gt; 20 %</td>
+  <td class="alert-level3">&gt; 50 %</td>
+</tr>
+</table>
+
+<table border="1">
+  <thead>
+    <tr>
+      <th>symbol</th>
+      <th>name</th>
+      <th>mint</th>
+      <th>coingecko ID</th>
+      <th>🌀whirlpool price</th>
+      <th>🐸coingecko price</th>
+      <th>consolidated price</th>
+      <th>difference rate</th>
+      <th>path volume</th>
+    </tr>
+  </thead>
+  <tbody id="prices" style="text-align: right;">
+  <tr>
+    <td colspan="9" style="text-align: center;">
+      ⏳ consolidated price calculating ⌛
+    </td>
+  </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

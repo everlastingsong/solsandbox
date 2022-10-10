@@ -1,0 +1,24 @@
+{
+  "name": "volume_based_consolidated_price",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@orca-so/whirlpools-sdk": "^0.5.3",
+    "@types/bn.js": "^5.1.1",
+    "@types/jquery": "^3.5.14",
+    "assert": "^2.0.0",
+    "fastpriorityqueue": "^0.7.2",
+    "jquery": "^3.6.1",
+    "node-fetch": "^2.6.7",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "ts-loader": "^9.4.1"
+  }
+}
