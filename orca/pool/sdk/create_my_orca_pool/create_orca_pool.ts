@@ -1,6 +1,6 @@
 import { Keypair, Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, Token, MintLayout, AccountLayout } from '@solana/spl-token';
-import * as BufferLayout from '@solana/buffer-layout';
+import * as BufferLayout from 'buffer-layout';
 import * as assert from 'assert';
 
 const RPC_ENDPOINT_URL = "https://api.devnet.solana.com";
