@@ -105,8 +105,8 @@ You can get all required tokens in the page.
 * [@orca-so/orca-sdks](https://github.com/orca-so/orca-sdks)
 
 ## Off-chain data
-* [whirlpool/pools](https://mainnet-zp2-v2.orca.so/pools)
-* [whirlpool/tokens](https://mainnet-zp2-v2.orca.so/tokens)
+* [whirlpool/pools](https://api.mainnet.orca.so/v1/whirlpool/list)
+* [whirlpool/tokens](https://api.mainnet.orca.so/v1/token/list)
 
 ## Mathematical background
 * [WhitePaper: Uniswap v3 Core](https://uniswap.org/whitepaper-v3.pdf)
