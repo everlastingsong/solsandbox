@@ -6,6 +6,9 @@ import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import Decimal from "decimal.js"
 
+// This code is copied from the SDK with the necessary code with Rust porting in mind.
+// For Typescript only, you can use 79b.
+
 // from SDK: utils/public/pool-utils.ts
 // Convert this function based on Delta A = Delta L * (1/sqrt(lower) - 1/sqrt(upper))
 function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64) {
