@@ -2,7 +2,7 @@
 #
 # to use this script, you need to create wallet.json
 # and it holds some USDC (>= 0.1) and SAMO (>= 0.1) to create ATA
-#
+# 
 # solana related library:
 #   pip install solana
 #   pip install anchorpy
