@@ -2,7 +2,7 @@
 #
 # to use this script, you need to create wallet.json
 # and it holds some USDC (>= 0.1) and SAMO (>= 0.1) to create ATA
-# 
+#
 # solana related library:
 #   pip install solana
 #   pip install anchorpy
@@ -114,7 +114,7 @@ asyncio.run(main())
 """
 SAMPLE OUTPUT:
 
-python /Users/ikeyanagi/PycharmProjects/HelloSolana/whirlpool/swap.py
+$ python swap.py
 wallet pubkey b'r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6'
 whirlpool token_mint_a 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
 whirlpool token_mint_b EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v

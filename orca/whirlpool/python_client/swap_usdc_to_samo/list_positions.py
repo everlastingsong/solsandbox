@@ -93,6 +93,7 @@ asyncio.run(main())
 """
 SAMPLE OUTPUT:
 
+$ python list_positions.py
 POSITION
   mint: b'82JgyaCXte5Cy2GBzXGTMW8FXUvVq2mpJxZ3JTLKUPcb'
   token_account: b'6gpsbv5c3pomYsZnPUubnHyEGY1Z5ZAbNVEriy3v7bn9'
