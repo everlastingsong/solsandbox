@@ -6,7 +6,10 @@ import { DecimalUtil } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 import fetch from 'node-fetch'; // npm install node-fetch@2 (v2)
 
-const RPC_ENDPOINT_URL = "https://ssc-dao.genesysgo.net";
+const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
+const ORCA_ENDPOINT_WHIRLPOOL = "https://api.mainnet.orca.so/v1/whirlpool/list";
+const ORCA_ENDPOINT_TOKEN = "https://api.mainnet.orca.so/v1/token/list";
+
 const MSOL = {mint: new PublicKey("mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So"), decimals: 9};
 const USDC = {mint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), decimals: 6};
 
@@ -29,32 +32,41 @@ async function main() {
   const pool = await client.getPool(pool_address);
 
   // get offchain data
-  // https://mainnet-zp2-v2.orca.so/pools
-  const offchain_data = await (await fetch("https://mainnet-zp2-v2.orca.so/pools")).json();
-  const pool_offchain_data = offchain_data.filter((pool_data) => pool_data.address == pool_address.toBase58()).shift();
+  const offchain_data = await (await fetch(ORCA_ENDPOINT_WHIRLPOOL)).json();
+  const pool_offchain_data = offchain_data.whirlpools.filter((pool_data) => pool_data.address == pool_address.toBase58()).shift();
 
   // calc fee based on trade volume
   const fee_rate = pool.getData().feeRate / 1000000;
-  const protocol_fee_rate = pool.getData().protocolFeeRate / 10000;
   // maybe protocol_fee should be considered
+  //const protocol_fee_rate = pool.getData().protocolFeeRate / 10000;
   //const lp_fee_rate = fee_rate * (1 - protocol_fee_rate);
   const lp_fee_rate = fee_rate;
 
   const volume24h_in_usd = pool_offchain_data.volume.day;
   const fee24h_in_usd = new Decimal(volume24h_in_usd).mul(lp_fee_rate).toNumber();
 
-  // get token USD price from coingecko (woof should be woof-token...)
-  const token_list = await (await fetch("https://mainnet-zp2-v2.orca.so/tokens")).json();
+  // get token USD price from coingecko
+  const token_list = await (await fetch(ORCA_ENDPOINT_TOKEN)).json();
+  const token_map = new Map();
+  token_list.tokens.forEach((token) => token_map.set(token.mint, token));
 
-  const coingecko_ids = token_list.map((token) => token.coingeckoId).filter((v) => v !== null).join(",");
+  const mints: string[] = [];
+  mints.push(pool.getTokenAInfo().mint.toBase58());
+  mints.push(pool.getTokenBInfo().mint.toBase58());
+  if ( PoolUtil.isRewardInitialized(pool.getData().rewardInfos[0]) ) mints.push(pool.getData().rewardInfos[0].mint.toBase58());
+  if ( PoolUtil.isRewardInitialized(pool.getData().rewardInfos[1]) ) mints.push(pool.getData().rewardInfos[1].mint.toBase58());
+  if ( PoolUtil.isRewardInitialized(pool.getData().rewardInfos[2]) ) mints.push(pool.getData().rewardInfos[2].mint.toBase58());
+
+  const coingecko_ids = mints.map((mint) => token_map.get(mint).coingeckoId).filter((v) => v !== null).join(",");
   const coingecko_price = await (await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingecko_ids}&vs_currencies=usd`)).json();
   const token_prices: TokenUSDPrices = {};
-  token_list.map((token) => {
-    const id = token.coingeckoId;
+  mints.map((mint) => {
+    const id = token_map.get(mint).coingeckoId;
     const price = coingecko_price[id];
-    if ( id !== null && price !== undefined ) token_prices[token.mint] = new Decimal(price.usd);
+    if ( id !== null && price !== undefined ) token_prices[mint] = new Decimal(price.usd);
   });
 
+  // estimate
   const mint_infos = await Promise.all(pool.getData().rewardInfos.map((reward) => {
     return PoolUtil.isRewardInitialized(reward) ? fetcher.getMintInfo(reward.mint) : null
   }));
