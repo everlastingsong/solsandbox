@@ -96,7 +96,7 @@ async def main():
         "tick_array0": pubkeys[0],
         "tick_array1": pubkeys[1],
         "tick_array2": pubkeys[2],
-        "oracle": oracle
+        "oracle": oracle.pubkey
     }
 
     signature = await program.rpc["swap"](
