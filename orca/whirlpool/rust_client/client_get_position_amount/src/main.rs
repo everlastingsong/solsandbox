@@ -34,7 +34,7 @@ fn pricemath_sqrt_price_x64_to_price(sqrt_price_x64: u128, decimals_a: i8, decim
 // reference: https://www.wizzairprices.com/blog/crypto/blockchain/solana/explore-solana-blockchain-with-rust-part-1.html
 fn main() {
   // connection
-  let url = "https://ssc-dao.genesysgo.net/";
+  let url = "https://api.mainnet-beta.solana.com";
   let connection = RpcClient::new_with_commitment(url.to_string(), CommitmentConfig::confirmed());
 
   // Load your wallet account from filesystem (from default location)
@@ -53,7 +53,7 @@ fn main() {
   let USDC_DECIMALS = 6i8;
 
   // position input
-  let MY_POSITION = Pubkey::from_str("5j3szbi2vnydYoyALNgttPD9YhCNwshUGkhzmzaP4WF7").unwrap();
+  let MY_POSITION = Pubkey::from_str("AauBPYLZLHs9ddErhyZVZhybtExRT2a7cinmFBJUrbHL").unwrap();
 
   // get whirlpool
   let mut whirlpool_data: &[u8] = &client.get_account_data(&SOL_USDC_WHIRLPOOL_ADDRESS).unwrap();
@@ -80,11 +80,11 @@ fn main() {
   // bound out-or-range price (sqrt_price_lower <= sqrt_price_current <= sqrt_price_upper)
   let sqrt_price_current = min(max(whirlpool.sqrt_price, sqrt_price_lower), sqrt_price_upper);
 
-  let position_amount_a = get_amount_delta_a(sqrt_price_current, sqrt_price_upper, position.liquidity, true).unwrap();
-  let position_amount_b = get_amount_delta_b(sqrt_price_lower, sqrt_price_current, position.liquidity, true).unwrap();
+  let position_amount_a = get_amount_delta_a(sqrt_price_current, sqrt_price_upper, position.liquidity, false).unwrap();
+  let position_amount_b = get_amount_delta_b(sqrt_price_lower, sqrt_price_current, position.liquidity, false).unwrap();
 
   // no slippage amount
-  println!("position amount_a {}", position_amount_a);
-  println!("position amount_b {}", position_amount_b);
+  println!("position amount_a (u64) {}", position_amount_a);
+  println!("position amount_b (u64) {}", position_amount_b);
 }
 
