@@ -1,0 +1,203 @@
+import { PublicKey, Connection, Keypair } from "@solana/web3.js";
+import { ORCA_WHIRLPOOL_PROGRAM_ID, ParsablePosition } from "@orca-so/whirlpools-sdk";
+
+// Specify which RPCs can use getProgramAccounts (some RPCs restrict its use)
+const RPC_ENDPOINT_URL="https://rpc.ankr.com/solana"
+
+async function main() {
+  const connection = new Connection(RPC_ENDPOINT_URL);
+  console.log("connection endpoint", connection.rpcEndpoint);
+
+  // find positions
+  // whirlpool = SAMO/USDC(64)
+  const whirlpool_pubkey = new PublicKey("9vqYJjDUFecLL2xPUC4Rc7hyCtZ6iJ4mDiVZX7aFXoAe"); // SAMO/USDC(64)
+
+  console.log("memcmp filters:", whirlpool_pubkey.toBase58());
+  const gPA = await connection.getProgramAccounts(ORCA_WHIRLPOOL_PROGRAM_ID, {
+    commitment: "confirmed",
+    filters: [
+      // account LAYOUT: https://github.com/orca-so/whirlpools/blob/main/programs/whirlpool/src/state/position.rs#L20
+      {dataSize: 216},
+      {memcmp: {bytes: whirlpool_pubkey.toBase58(), offset: 8}},
+    ]
+  });
+
+  gPA.map((account) => {
+    const parsed = ParsablePosition.parse(account.account.data);
+    console.log("position address:", account.pubkey.toBase58(), "liquidity:", parsed.liquidity.toString());
+  });
+}
+
+main();
+
+/*
+SAMPLE OUTPUT
+
+$ ts-node src/80a_find_whirlpool_position_by_pool.ts 
+connection endpoint https://rpc.ankr.com/solana
+memcmp filters: 9vqYJjDUFecLL2xPUC4Rc7hyCtZ6iJ4mDiVZX7aFXoAe
+position address: 78YDGdF2B8zGa3iWA95A3ZZx6VBA2myEaSAqkYYx7CYd liquidity: 2270758437206
+position address: 5PPTKLcu2MTE3YGnPgBN3Bh9i2C6KT1HXazCf2yLYHmx liquidity: 437250721681
+position address: C3Z3QLisK3Tmt8TtCTdA2PULfjQHMiY6aG4yGU7LAxTP liquidity: 36695639621
+position address: 5FAn8CZ4FEK8ErM9pkZ1wmqQpPyPLhqXMWzRxJvBwBd3 liquidity: 811741815
+position address: FZct9wqSHa7dMuiSk2KWnpfJy9nN1WQAGLhdprA94yy4 liquidity: 53500496258
+position address: 22RaQA2VG4HsURRfhcPNbTucEtAQZTmzyeWi2FEfbK6h liquidity: 90575425867
+position address: 6THCXpGRSkygmZPpfueUxSrbtECiY3V8r1zg1ySZopza liquidity: 7908984131
+position address: 7eRAdvxHHYxWQLwX2gCxcurA4hCd1o36msJWnrktxZWK liquidity: 25141615029034
+position address: AvngVsdsmuHd2AYD5pfRWHFLyp8YSsD8qSKrMK5BNE4o liquidity: 6996541833
+position address: hdxGavr3nuEBnH39D2z9JyQ7qupaGPXiNGEk8WDoZyi liquidity: 6164537533509
+position address: AysawvAtndK3WEFiQcsutR9YNMgJe553wTPdDj4JXdkb liquidity: 39792548
+position address: j224mHsPpuuuY212LwmhDYp7iewE7E18aNVP4sTfue4 liquidity: 190621633702
+position address: C1v36orPVwvGrAaG8wofbNvBdnokJMEFx75qX6xDoAST liquidity: 118955718239
+position address: A1Df7SYt8f511zUisxE5Jq5RixbtmCy4P6Y3UiFFTdFi liquidity: 127900996680
+position address: 5N5psX87whFZ7YH8GHjNEWRF12Q265cLF3oM9q9RQbxd liquidity: 0
+position address: Bf5ogj7oE8cAw29Z3muG1vBib1dfjE7gduFC896chQd5 liquidity: 672640738366
+position address: 5CPt3Z4umUXYocJYwLKJfMiCEcyYX71woGzhWVPLJ6SS liquidity: 223628814918
+position address: CZYRHCVjr423GVgbD7C7UE8BAfyoQhqFn85f7NWQDH6y liquidity: 11781193
+position address: FdivkYzhVXshyK69HwgZmv3iBWpLyKq6aTtKgTL5DRdb liquidity: 10114380919981
+position address: ADhajgmtmTEajXwnHXbjV3U1Jdpe35cqHG2RrdKJE656 liquidity: 118264075316
+position address: EokK6BG8dhdE8Tm75yUoqLPB9D94j9ZwkfpQ2QtvGRG4 liquidity: 288307721058
+position address: EvgvYvbe4YYaJNACAnDnyquH5AUr3LVLsrMxSJAghbjn liquidity: 19027009754
+position address: 6QKYM4PvhEoeMLzkvRNKnLLBdTWCruP6zsv2yMW5xPH9 liquidity: 3282241301
+position address: FKXjr3QBRbJqNTfNwQN1TCWDTJqWh2QgH7imjo2LJS1W liquidity: 123609769693
+position address: CeyerJCRMwnRVY3rTGdMNAd9VAtUqWYvSp8HNUVmR3mY liquidity: 0
+position address: B66pRzGcKMmxRJ16KMkJMJoQWWhmyk4na4DPcv6X5ZRD liquidity: 2104818075
+position address: FHK4k85xxN88Pi2LUDqYoZL3PuEX8Xj4FQrM8kE2V5Bv liquidity: 694071727
+position address: CzhPnqPayPLk8nPC4H1WaGr2PRcZviAsN97Kd4dKwVbJ liquidity: 588844227427
+position address: 6iX6rrCXTJnhVpL5yDLqqWKrn2A8b7nMSF3D6h8Mp8gH liquidity: 0
+position address: DfpWuVrm3A98gozQi54b1mQeYKY9TEHXqFD5AiGD26NB liquidity: 23205638301
+position address: 2CV7Rt3kUmrRRkMeah1bNHviBmoW14u8vG7U4ZF5U7Ni liquidity: 1414669216867
+position address: DKFkEhuGz29FsCJdqefjU4NpnbdZQSfyCBTT6P3TEUHS liquidity: 0
+position address: 5yjnWtfHtfgwBRjrCvGaxnxMi6jFcD4SmicLyGoXKMAk liquidity: 36682218234
+position address: FAPh42zxZ1x1yrJK5hhCVZVFfUNsKJW3vjuXyrz4p9Cp liquidity: 767263433325
+position address: 8gZHy1xeWGjRJg7CqcU6ZepfJPiWwjPnjD4hPYyZmXkb liquidity: 0
+position address: 6ypu5VcAQKne8QzupMHc694jDeUTaEbcDuLho9teUDrc liquidity: 3754331363
+position address: 3MJnaipdsdEqSWTvdhTpk54B1isBKYQSLYiSH7HxsDza liquidity: 0
+position address: DK1duEHhChuBqVFZhaCfe2iFzV6WonNftUaPYKs1ZoUk liquidity: 172713489261
+position address: 9AFZqXueYQbXvGUExtVvdT5rHkjSpumZVHb6DYucpiws liquidity: 268907069508
+position address: Fs31WsBbPJLxJZZD25567y3d9H7GdPkd98nhJGZmdEgM liquidity: 1884279540137
+position address: HbUvbm9LbAkx9M9CtaqtV9MerduDKLuxT4GpqBvJoM8P liquidity: 189796799538
+position address: Gtcjyi9U2C9gcKEMDbErNev8kZJ9yLsFRPgBva1bxqwZ liquidity: 83063925488
+position address: Ad6pLSCYqzf9DbUxwzH1B5nLV3TiTe5N6zVjEuoKP8WW liquidity: 502783093362
+position address: CHY1PfQqU7pvY1wMoGDuDH8cWcd1mfPkP8KjtissFhof liquidity: 64672841175
+position address: Df4x5osGDaE13rRHJBUA8wmnP3KxD7wR3rfFAWq5Q9pk liquidity: 60888667169
+position address: At4H6HEAcu4C6g3FLeELjgF6mfS2tTe8BUhtyzjcyBwv liquidity: 0
+position address: HqkrGYNq6z2Pq7GyhM9HTUHriam1Zq3eR8ctovEg4aX liquidity: 0
+position address: Dr5jxKFgoR3M1og4QWFJgZwxp4B1vCdzNjGtR94URtf5 liquidity: 18622486961
+position address: 4bX9111itb2m5UyXSai41RFuJheUFUSMUTLHjVcaxBP5 liquidity: 0
+position address: 9Nz9ASoowxCd41XgXYfggLQbuDDesQofWiuo7gf9BEWG liquidity: 17844033179
+position address: a8uHGH2UogMECp9YgVwaEwZ32gdZYUWex7y6vHXQwZ4 liquidity: 0
+position address: 6DeiX5zLxSrjN2NWxsYL4DLrdcBXY6M4LxhNCqTbHccA liquidity: 945970604
+position address: 2Gk3pwjpCAXiCsij3H5b7tGvCNdNA6bed2m3XuYLjHFi liquidity: 27081442300
+position address: 2oviByD4XutH2QHDrkYFM5ct5LKkWKaWZDTqivRUozuQ liquidity: 20417663193
+position address: 6ypZfT3itQpEe29YCjF3Pa85eM9P9iHa7eghijLbgfCm liquidity: 74626553363099
+position address: Dr7ia9zeRR5ZJ9YMjjhSpn8MCEjET6in9DK5vubP2kGo liquidity: 762504920340
+position address: 9zSzr52mezLWnuJFZd7p5NEHLXzW1aaPcrfCP6zoLyC3 liquidity: 60474857114
+position address: ALJcVmcbn9EfyLwr4BMfFg358iW8XM86Y2FYbCRP2MqA liquidity: 1945598339581
+position address: 7rZtdXTwZQPD2Z3edq52KrrUw4vm3rGiLtrdLbQuGSmc liquidity: 0
+position address: 4UQ7YU5sydDR2Y3PK3i8oeQhzfpC5bfhjY6SeGBtKdoA liquidity: 0
+position address: Tgm3xW6RVkn9rqGfuyL6GxiQukshR9HjUPsyfSCGk63 liquidity: 3590373382
+position address: 98TiL5YaA4cFiVzNHjUbuhssc62FsMyujqU6duqo355b liquidity: 1827283866
+position address: 2XtnKBJ3RQv99NtFvhkfk9SqnNa7aDiEB8Jbttar7TFU liquidity: 0
+position address: G7jtNDGsZm1miU2ge3aGpWcYpqv3MSXmWjFn4UNSEkAV liquidity: 2621325508896
+position address: HNGZAka2h3H8ZgWGMvpVsrdVhjQdm9yrU9CdvSbXtKwH liquidity: 599873513821
+position address: J34Tec5f1DtJq76iMAtEDGF8WM4p1yLcAi4MF76668M2 liquidity: 34700962354
+position address: 8ZCdHE7Uy2u1hb9RKWH9xsmNgq5qY2AZEsCYiprcXLNj liquidity: 2356916912
+position address: A1DbLRBvuieeEtY7QuxeYifWJWiKbM7Do5gyFxsJ5kCc liquidity: 0
+position address: Em1X9PN6ijWxFU5mfdx2VHLkd4Sc8kDNXsXWRoapkMhQ liquidity: 0
+position address: 82h49hxMyWYVoWiY8bRogpJk6CoJ1LKqjd1wKZf1mSGS liquidity: 41994017791
+position address: 26hRzvHv7ACiujHbmAajTZt3X7kvsPmgBQCfQPYJ4bWq liquidity: 60026983492
+position address: BeRvMQhnznE11sU59jPtd7wF7Q9d9UXSkZFa4JoV464w liquidity: 2328509639
+position address: CcXfvYCRkwnobXGjD3d7rKMBKDhK7S54DzTvaJ3cvpFW liquidity: 91315666293
+position address: 2ptaLGJgwvf9MCxnYXePfQ5J6M8RL3sqB4J3VDh4yaJy liquidity: 132012088423
+position address: 99PKrp8QHz7EdGoKvW9e7hRrQfhy6YFhco7igbjxhCo8 liquidity: 1669145348638
+position address: 62WkUrbXSp8QDHLXgvKdCopv4PqtwKwp83ry98ooYaf2 liquidity: 69180155236
+position address: G541LiotpEFDofRmYQwekGpJyQfUktTHi4bhpzH14XvE liquidity: 44318338715
+position address: FkGZ3LD4dkwM3R9gKykEwwVUeK9SVxR92T1ocz6dRD6X liquidity: 21053325123
+position address: 6V8yKYH9rNxQSfh9haQcTRqvNuLvQnCdRTUH7xpRQMjC liquidity: 41919502964
+position address: ASY1Wy3cNCmyXoK4Zz68Uo8DAGyoVXQYowpsmQ4ambFk liquidity: 12969148550
+position address: GaTwFWtP9vpNg3TZQx7VehaKNMZ34cAn3XXEEUD8nxYf liquidity: 0
+position address: BguLZ9YAiZxpmGixWytXs3Z7o11fUxez6CQdzio2ipNa liquidity: 263002833320
+position address: 6MhaLraTP8iB6LZYQREy3yEa4rqZT9QD9EpRJ6jQVyGG liquidity: 61260955026
+position address: BT19eud6w6wVLz3KgSEHkYRWtECBoSnkdBChyxj2B3S liquidity: 0
+position address: CXZBMu5PuPNC5VZdAsXXoxQj5HTsU49WC2F9ruy69jk2 liquidity: 1166264176830
+position address: 3Jyt71tFnPe9wPu4JAg3Nz8tsBhRc2Kd9fTBuPUNLxae liquidity: 267151043499
+position address: EuLuXt17L5zetPmXsdetpPCXFVEqnUy3FnGzbgtp5KV7 liquidity: 7210386020
+position address: B4m6JSGfPPAcPzkHfpCMVfGbL2GUHzGdDsz7nCsETpcK liquidity: 357395911953
+position address: nr6gSodiJA5KvyqmTxTfLrUkQUS39LrwDQrezwvGMvr liquidity: 125168126582
+position address: 6HNdeVdyqnu5Bp56MCo8cibZeVZLTH8vVq7aJT8s3rbm liquidity: 700834326201
+position address: G9xuD63Rx6tK2ArVrtCZMyRbejpWpR3ThYvco57MSrhM liquidity: 1226000952881
+position address: 8bXSZ1APQQ8HxaeGk7d5GdhXAEVYWVYhA1ivRAJSTRxc liquidity: 46718524310
+position address: 71wsr5Jk4yW8UsaMbLptZdUaB5WzphfVHJuMu9Dn3tsZ liquidity: 0
+position address: 6VsydpAbphRgJco7SXc1WMBrfPmAHAPEfyUpEey1LeRd liquidity: 0
+position address: EnFpqD2apquMYLbi5P4dB2fC7crC7kWvrsWNucgvxr2g liquidity: 143215970
+position address: EcGueXHDb5DNANi1iZ4vmRu3YJRufb424a1emdHzrkCT liquidity: 0
+position address: EJ4U9rr3buREMhywiZiyRbTUtHktgfeNmMcF7Vmmc3x liquidity: 616288607080
+position address: Aig9hnkiAMT58uSfxKQexuNwA5TbqVxM6HVqdm2k7Bph liquidity: 61306382254
+position address: 3JagPXnQDjXpp7dnAwAXbq2XLaFizhXmwtmM8C1J9pzq liquidity: 5201743816
+position address: AMg9LPxWRSoj5j6ceRLsJZDviCEe4bqWpV1r1PUNbHdn liquidity: 60990430
+position address: 4abKWKJGYnSmE87bkv56qHDGx27ais1GzXrWHTL9CMB1 liquidity: 0
+position address: FDTjN9SyiCKBRTpai8MebB5WDKDSVtDk7WPM6Ye5xWK1 liquidity: 0
+position address: 2FQEUvvVxmLCWxynn1b2pWdjBW9P816t4VzWQeLnfgDp liquidity: 17530912783
+position address: 7yXRUJmUDdjHpDFHTzwpvm2Hx1PtN6E7KDXGTTppKd9x liquidity: 747511420376
+position address: 6En2VDAbuJUMaPnr1KD2Hv65omyk72fCzs6d1ADZ1DPa liquidity: 845309285506
+position address: D5FNdBg95gB1ye3vhRsXUJKgbes57phGrbVRto6cNFej liquidity: 187298564232
+position address: EAynwKnF3MXMLcaXw5W4h4rKewyxCab1L3ZaGwGb4zLP liquidity: 1050626392477
+position address: FDK5FLJBf7ALAwtxtGDaUYma85Cjh61VT55tN1H1XvWM liquidity: 5956168452
+position address: D5bVYmVE81A9SXyU11ZgdvpueZsrz1x7hZFdaUjYkPRa liquidity: 20934716046
+position address: 74SKbAxz9aDTCneWipoAaTHXBJJ2PxYmn8JWvvfczREG liquidity: 0
+position address: HuyGbh6vd9rnaZe4JEebWm8z7MR3WaReaa8UR656Dz4s liquidity: 56323999819
+position address: 37ztMJYNNLtY4cHHeJRvoXWJuYfQfns6T6AL9FmtV3bG liquidity: 76207120253
+position address: E4NzXLaGCQLHEqUQAYpi1W8wFUi3WKd3easv4Cx7v7Zz liquidity: 0
+position address: J5HXw6msABxcyuAZS1bacvB2w5DAPakNbUgeVq2TCRzu liquidity: 218271301450
+position address: DrqoWxxo489mvhwBG23d4894vpBXKSDgDX6RrgiXSpJC liquidity: 11856342
+position address: Cyqk1PAhfthYrDEXc1imz3Cs2zXXp87CvCKFY2rsrs63 liquidity: 3227402292
+position address: CVhgDnxkA4gXt4FSbzagU3Y6L3kBuFdKcB6AjGwWhAZh liquidity: 15556394109986
+position address: 67GZ8GFtknka8coYoNuW4sGfshVmo4XYvpQRTxgnRQkQ liquidity: 17448353927
+position address: HvD5TUG2N94FHpmBtivh4nnauvGivAk25VNrX6DwMuUQ liquidity: 0
+position address: 7bZeV8juYAsaRhtuCksARibAywmykwrEndVT6NHn557i liquidity: 289911364491
+position address: 8kgfAH4xiBGZLdqDPjN1AnD5e4RBABM4aEKAv4EKXR7A liquidity: 1684554261419
+position address: 6qpJoCahwZaCXJwRFqworanXBnkgycQvnMM7SnfaH1ym liquidity: 0
+position address: 2Fc6qu7RzDiYbFoDV1uHdpmgYQE2DQiqa8WmMrKkX7mu liquidity: 0
+position address: 9rCeoeELLpiB6ugc2iTUHZSwXiJs5KWs19pLXsVuPE6z liquidity: 0
+position address: 7xYSdLwMkCCp5Ho1J8shur8fSWgCfM1XpusG5pkJXvGx liquidity: 15550836830904
+position address: 96xR4EroD8BbgzVoXFSZ4NCtBMJygakfgvby74AqUhz5 liquidity: 0
+position address: 23qoajHYwL6uJ7BmiZiGJLdMfehfsNZsuqqMch2xuqjk liquidity: 806216977
+position address: 7huiBJ9noqM4QcaVcnN6KoWHnKWHu6T7WEtrhLcMrw5G liquidity: 337901760617
+position address: 6rJVZBSvom3zASBGEu6tP6fWpuh2Zgi89MDPL71YYji9 liquidity: 1527342192844
+position address: 7E4Pn3NFB5WwJhjhh2CWr1T8vQhP1SRXjyJJajqz86HL liquidity: 166599714
+position address: 4aVtD46Fc3HiJM5JiiWrQWWN8XECBdUzeAFh7HQAA16Z liquidity: 6102088322
+position address: 6wrcRkJomP4X3Utxq4fqoDHTBwLhiZmfSWiGCjzjgzUM liquidity: 0
+position address: 6nWMZanvhp4B4YjRacG9SL2GHJGGcceJxSxiH9tZSkoK liquidity: 17909037
+position address: DASdhdRXQRRXm6WSRFLARQruRCyiqdfJtD5twJvqJXyX liquidity: 0
+position address: 6yRU6nPmwofBrwptjy8oAKdVVVCvMxyfCXik2ig4i3Ex liquidity: 28498145439
+position address: AMz76h5GFAm368gckSTJvyWiu3bcdJ7GTXTfaiUwLzZ3 liquidity: 0
+position address: EpJowdP5PT8ZtqRprUx3JgG3w84wQN8rufYqgdqHUPe3 liquidity: 0
+position address: 9B4N4KqpTKjnVPHGb44b9ziVJrqtV7X71nGpEpFsfe9c liquidity: 14809860517
+position address: BHmxGvDX9vqJWxpfUBbayfr28YySNfRBJTFktpScC5yD liquidity: 0
+position address: C61e9Kt5XmgL9SMx2cVAcqbESokhLNjb7eXZa3RhS6bC liquidity: 16430495727403
+position address: 5gDzniHEt7grr4eS5je65g4i2AUmuhiR1S1c4t8opkPc liquidity: 0
+position address: 4SzpesoxYuTH44at64nuLaiDyCDWyLBT4tLUoj6Kwspd liquidity: 1071679804
+position address: FTAuaRMD1dJNpMnrtWftumtZs945GPcBABbDVFrPfoHN liquidity: 7274562996
+position address: FwyXTvT2ZsiQ3TtJ5Wprwy1sTYLnca8teT9ugLDLx3t2 liquidity: 450169482184
+position address: 12oZWkiqSedY3wXENdTutLBSiiGTnNFUFoGfsofNUYTA liquidity: 20929288259
+position address: 9fXqgTBfueZT3TG8GFLjRV6RWiKa6jxH4FrvMiwSbQuT liquidity: 123322301063
+position address: DxzpbN3AmD6Etu2KEraw8N8GTwaGin7CPpnGLaAZMyRR liquidity: 173016217536
+position address: 33wjTz4eR4eVFMDoyJmNprfXyDceWy4v5nXDLwLcEyWX liquidity: 1364900001428
+position address: CCJDNFNCyRTK9poH7wK4ydDdVajEWon5RX9Eu2aA9Xbc liquidity: 19292215920
+position address: Tzo24edbik1xMNMKDGbc5ovt7TrTrRbPhXfby9LVF9V liquidity: 1371796586430
+position address: 63GZu8ewvD9irkw21ehzBnqdpq1VYBRyBN8bJp8ohjvu liquidity: 114604552196
+position address: DoCUnn7TQbimpgMjfYTtnk91ST8KCouy9qcvUVJow52U liquidity: 1247073472790
+position address: 5bUX7YvoyL3YZeshKx9LkxcCzHG5aT6EBLxrwWvVDsT5 liquidity: 0
+position address: ERi1XHTfixcd4j8SpiJZxKPLjxw9aQoAbpUzKrNkpo52 liquidity: 4548390323025
+position address: AzsiFfxFRagRcDzJnWzmhSVuxgKRzRhbDoUBHbRtZAi2 liquidity: 0
+position address: EMHknwM9aAftV9zDQL2tks4ztWFqhckqre3eZsrDDqFs liquidity: 0
+position address: FxH2FE6NaC7f4hB4X41Cu1A4DiQkjCEBLrPvs5mWYwwR liquidity: 17507953466
+position address: Gwb9nomTN2Ei9bJSobbD3bURPi9xyUSHT4xH5KQZ1VGQ liquidity: 313992364107
+position address: H5q1PzWUPqdtHByaXgt7veMAEqS4d3ggaUgufARJGZEi liquidity: 0
+position address: Xy8vrqBuvB4hGPhSAuk65hG1UjuoYWMbycbEbZHKLU1 liquidity: 0
+position address: jeYcN9ZVakSeR8rUBa3uyUY6hciuFzMf9SBDz6LSqgG liquidity: 28727630644
+position address: F9zqcCuCUj13uoKc3aoz42MTBkdLR7KusD6657enfDHS liquidity: 109392219665
+position address: CZA7UT9rPs7jmMC8rBFGZ731ieBqdBJUxzr5PWpgmp9Y liquidity: 7328636635084
+
+*/
