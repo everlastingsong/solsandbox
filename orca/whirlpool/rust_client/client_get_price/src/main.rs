@@ -29,7 +29,7 @@ fn pricemath_sqrt_price_x64_to_price(sqrt_price_x64: u128, decimals_a: i8, decim
 // reference: https://www.wizzairprices.com/blog/crypto/blockchain/solana/explore-solana-blockchain-with-rust-part-1.html
 fn main() {
   // connection
-  let url = "https://ssc-dao.genesysgo.net/";
+  let url = "https://api.mainnet-beta.solana.com";
   let connection = RpcClient::new_with_commitment(url.to_string(), CommitmentConfig::confirmed());
 
   // Load your wallet account from filesystem (from default location)
