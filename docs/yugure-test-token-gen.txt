@@ -5,3 +5,26 @@ Address:  9BaLS7U6p4TY27eR4cBXEXPUey8vw76wa4S7STS6d1FS
 Decimals:  6
 
 Signature: 4gLb31vVswqmcfN4EQD4L4yhZ2ackY69Mu5kyw7P26Craz7K61xtDh8BYduTfGctZinyt8yGjvdkTad8mAUJbGZe
+
+$ ts-node src/tools/99_create_token_metadata.ts 
+connection endpoint https://api.mainnet-beta.solana.com
+wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
+create Metadata...
+prompt: tokenMintAddress:  9BaLS7U6p4TY27eR4cBXEXPUey8vw76wa4S7STS6d1FS
+prompt: tokenName:  yugure test token
+prompt: tokenSymbol:  YGRT
+prompt: tokenMetadataURI:  https://everlastingsong.github.io/solsandbox/docs/yugure-test-token-meta.json
+setting... 
+        tokenMintAddress 9BaLS7U6p4TY27eR4cBXEXPUey8vw76wa4S7STS6d1FS 
+        tokenName yugure test token 
+        tokenSymbol YGRT 
+        tokenMetadataURI https://everlastingsong.github.io/solsandbox/docs/yugure-test-token-meta.json
+
+if the above is OK, enter YES
+prompt: yesno:  YES
+mint: 9BaLS7U6p4TY27eR4cBXEXPUey8vw76wa4S7STS6d1FS
+metadata: G9CPAM1PqBq1FQ7aMySuUEWwWJdW3cXfNvN2js4aFewj
+name: yugure test token
+symbol: YGRT
+uri: https://everlastingsong.github.io/solsandbox/docs/yugure-test-token-meta.json
+signature 2zNg6dhvSJ6otY6T5r97MiUZ4m8zp1xdFMVRy1nsajHEK6RPW7xJeP8Hdm3rdVoM3oVzqTG6FzUp9QwyNvgzPhrh
