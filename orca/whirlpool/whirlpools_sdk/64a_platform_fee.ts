@@ -4,8 +4,6 @@ import { PublicKey, Connection, Keypair, SystemProgram } from "@solana/web3.js";
 import { Percentage, DecimalUtil, Instruction, TransactionBuilder } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 
-import PLATFORM_WALLET_KEY from "../wallet-as-platform.json";
-////////////////////////////////////////////////////////////////////////////////
 
 async function main() {
   const platformWallet = new PublicKey("2v112XbwQXFrdqX438HUrfZF91qCZb7QRP4bwUiN7JF5");
