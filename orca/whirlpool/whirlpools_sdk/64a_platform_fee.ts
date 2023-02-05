@@ -58,14 +58,15 @@ async function main() {
   });
 
   // construct Tx
-  // payer = platformWallet
   const builder = new TransactionBuilder(ctx.connection, userWallet);
   builder
+    // transfer SOL to platform wallet
     .addInstruction({
       instructions: [transferIx],
       cleanupInstructions: [],
       signers: [],
     })
+    // swap
     .addInstruction(swapTx.compressIx(false))
 
   // send & confirm
