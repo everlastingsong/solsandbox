@@ -1,25 +1,24 @@
 import { PublicKey } from "@solana/web3.js";
 import {
     WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
-    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, WhirlpoolData, PoolUtil, swapQuoteWithParams
+    PDAUtil, ORCA_WHIRLPOOLS_CONFIG, WhirlpoolData, PoolUtil, swapQuoteWithParams, SwapUtils,
 } from "@orca-so/whirlpools-sdk";
-import { Provider } from "@project-serum/anchor";
+import { AnchorProvider } from "@project-serum/anchor";
 import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 
 // THIS SCRIPT REQUIRES ENVIRON VARS!!!
-// bash$ export ANCHOR_PROVIDER_URL=https://ssc-dao.genesysgo.net
+// bash$ export ANCHOR_PROVIDER_URL=https://api.mainnet-beta.solana.com
 // bash$ export ANCHOR_WALLET=~/.config/solana/id.json
 // bash$ ts-node this_script.ts
 
-const provider = Provider.env();
+const provider = AnchorProvider.env();
 console.log("connection endpoint", provider.connection.rpcEndpoint);
 console.log("wallet", provider.wallet.publicKey.toBase58());
 
 async function main() {
     const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
-    const fetcher = new AccountFetcher(ctx.connection);
-    const client = buildWhirlpoolClient(ctx, fetcher);
+    const client = buildWhirlpoolClient(ctx);
 
     // get pool
     const SOL = {mint: new PublicKey("So11111111111111111111111111111111111111112"), decimals: 9};
@@ -37,24 +36,27 @@ async function main() {
 
     const a_to_b = false; // NOT (SOL to USDC direction)
     const whirlpool_data = whirlpool.getData();
-    const tick_array_address = PoolUtil.getTickArrayPublicKeysForSwap(
+    const tick_arrays = await SwapUtils.getTickArrays(
         whirlpool_data.tickCurrentIndex,
         whirlpool_data.tickSpacing,
         a_to_b,
         ctx.program.programId,
-        whirlpool_pubkey
+        whirlpool_pubkey,
+        ctx.fetcher,
+        true,
     );
-    const tick_array_sequence_data = await fetcher.listTickArrays(tick_array_address, true);
 
     const quote = swapQuoteWithParams({
         aToB: a_to_b,
         whirlpoolData: whirlpool_data,
         tokenAmount: DecimalUtil.toU64(amount_out, SOL.decimals), // toU64 (SOL to lamports)
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(a_to_b),
         amountSpecifiedIsInput: false, // tokenAmount means OUTPUT amount of SOL
-        slippageTolerance: Percentage.fromFraction(10, 1000), // acceptable slippage is 1.0% (10/1000)
-        tickArrayAddresses: tick_array_address,
-        tickArrays: tick_array_sequence_data,
-    });
+        //tickArrayAddresses: tick_array_address,
+        tickArrays: tick_arrays
+    }, Percentage.fromFraction(10, 1000), // acceptable slippage is 1.0% (10/1000)
+    );
 
     // print quote
     console.log("aToB", quote.aToB);
@@ -75,7 +77,7 @@ main();
 /*
 SAMPLE OUTPUT
 
- ts-node src/89a_exact_output_swap.ts 
+$ ts-node src/89a_exact_output_swap.ts 
 connection endpoint https://ssc-dao.genesysgo.net
 wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
 whirlpool_key HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
