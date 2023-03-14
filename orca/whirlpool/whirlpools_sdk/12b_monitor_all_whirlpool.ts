@@ -59,7 +59,7 @@ class AllWhirlpoolMonitor {
 
 
 async function main() {
-  const RPC_ENDPOINT_URL = "https://ssc-dao.genesysgo.net";
+  const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
   const commitment = "confirmed";
 
   const connection = new Connection(RPC_ENDPOINT_URL, commitment);
