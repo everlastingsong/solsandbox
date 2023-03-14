@@ -49,7 +49,7 @@ class WhirlpoolMonitor {
 
 
 async function main() {
-  const RPC_ENDPOINT_URL = "https://ssc-dao.genesysgo.net";
+  const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
   const commitment = "confirmed";
 
   const connection = new Connection(RPC_ENDPOINT_URL, commitment);
@@ -57,7 +57,7 @@ async function main() {
   const ctx = WhirlpoolContext.from(connection, dummy_wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
   const client = buildWhirlpoolClient(ctx);
 
-  const SOL_USDC_WHIRLPOOL = new PublicKey("HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ");
+  const SOL_USDC_WHIRLPOOL = new PublicKey("7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm");  // ts = 8
   const whirlpool = await client.getPool(SOL_USDC_WHIRLPOOL);
   const token_a = whirlpool.getTokenAInfo();
   const token_b = whirlpool.getTokenBInfo();
@@ -75,7 +75,7 @@ async function main() {
   whirlpool_monitor.start_monitoring();
 
   // sleep...
-  const sleep_sec = 60;
+  const sleep_sec = 30;
   await new Promise(resolve => setTimeout(resolve, sleep_sec*1000));
 
   console.log("stop monitoring...");
