@@ -22,6 +22,12 @@ async function main() {
     const state: AccountState = AccountState.Initialized;
     console.log(`AccountState.Initialized = ${state}`);
 
+    // how to create u64 instance ?
+    // u64 data type have been removed at spl-token 0.2.0.
+    // we can use DecimalUtil.toU64() to create u64 instance without troublesome related to import.
+    const u64amount = DecimalUtil.toU64(new Decimal("1000000000"));
+    console.log("u64amount = ", u64amount.toString());
+
     const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
     const fetcher = new AccountFetcher(ctx.connection);
     const client = buildWhirlpoolClient(ctx);
@@ -84,12 +90,13 @@ $ ts-node src/01_get_quote_and_swap_usdc_usdt.ts
 connection endpoint https://api.mainnet-beta.solana.com
 wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
 AccountState.Initialized = 1
+u64amount =  1000000000
 whirlpool_key 4fuUiYxTQ6QCrdSq9ouBYcTM7bqSwYTSyLueGZLTy4T4
 tickarrays:  8kZSTVuV7C4GD9ZVR4wDtRSXv1SvsSQPfqUbthueRNGV 8kZSTVuV7C4GD9ZVR4wDtRSXv1SvsSQPfqUbthueRNGV 8kZSTVuV7C4GD9ZVR4wDtRSXv1SvsSQPfqUbthueRNGV
 aToB false
 estimatedAmountIn 0.01 USDT
 estimatedAmountOut 0.01 USDC
-0.9998259752012860829851762038371891779784
+0.9998231703254360960128209113911128373806
 1
 
 */
