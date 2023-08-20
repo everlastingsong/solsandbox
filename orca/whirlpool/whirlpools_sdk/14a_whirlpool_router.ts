@@ -2,7 +2,9 @@ import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient, swap
 import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import { PublicKey, Connection, Keypair } from "@solana/web3.js";
 import { Percentage, DecimalUtil } from "@orca-so/common-sdk";
+import { OrcaLookupTableFetcher } from "@orca-so/orca-sdk";
 import Decimal from "decimal.js";
+import axios from "axios";
 
 // FOR whirlpools-sdk v0.11.4
 
@@ -11,6 +13,8 @@ const DECIMALS_USDC = 6;
 const ORCA = new PublicKey("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE");
 const DECIMALS_ORCA = 6;
 
+const ORCA_API_ENDPOINT = "https://api.mainnet.orca.so/v1";
+
 async function main() {
   // bash$ export ANCHOR_PROVIDER_URL=<YOUR RPC ENDPOINT (HELIUS, QuickNode, Alchemy, and so on)>
   // bash$ export ANCHOR_WALLET=<YOUR WALLET JSON FILE (~/.config/solana/id.json)>
@@ -18,7 +22,11 @@ async function main() {
   console.log("connection endpoint", provider.connection.rpcEndpoint);
   console.log("wallet", provider.wallet.publicKey.toBase58());
 
-  const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID);
+  // to find ALT, lookupTableFetcher is required
+  const orcaMainnetAPI = axios.create({baseURL: ORCA_API_ENDPOINT, responseType: "json"});
+  const lookupTableFetcherForMainnet = new OrcaLookupTableFetcher(orcaMainnetAPI, provider.connection);
+
+  const ctx = WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID, undefined, lookupTableFetcherForMainnet);
   const client = buildWhirlpoolClient(ctx);
 
   // find all Orca supported whirlpools
@@ -60,6 +68,7 @@ async function main() {
     availableAtaAccounts: undefined, // allow all intermediate tokens
     // add your custom setting if you want
   };
+  console.log("maxSupportedTransactionVersion:", selectionOptions.maxSupportedTransactionVersion);
 
   const bestRoute = await router.findBestRoute(
     trade,
