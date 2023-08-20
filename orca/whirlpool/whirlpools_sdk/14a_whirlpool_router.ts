@@ -65,7 +65,7 @@ async function main() {
   const selectionOptions: RouteSelectOptions = {
     ...RouterUtils.getDefaultSelectOptions(),
     maxSupportedTransactionVersion: ctx.txBuilderOpts.defaultBuildOption.maxSupportedTransactionVersion,
-    availableAtaAccounts: undefined, // allow all intermediate tokens
+    availableAtaAccounts: undefined, // check if ATA exists on the chain
     // add your custom setting if you want
   };
   console.log("maxSupportedTransactionVersion:", selectionOptions.maxSupportedTransactionVersion);
