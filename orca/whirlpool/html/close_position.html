@@ -696,7 +696,7 @@
 
         async function list_positions() {
           const wallet_pubkey = cached_wallet_pubkey;
-          const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
+          const connection = new solanaWeb3.Connection("https://rpc-proxy.yugure-crypto.workers.dev", 'confirmed');
 
           try {
             notify_info(`listing positions...`);
