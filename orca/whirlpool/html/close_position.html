@@ -770,7 +770,7 @@
         async function close_position(cached_position_index) {
           const wallet_provider = cached_wallet_provider;
           const wallet_pubkey = cached_wallet_pubkey;
-          const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"), 'confirmed');
+          const connection = new solanaWeb3.Connection("https://rpc-proxy.yugure-crypto.workers.dev", 'confirmed');
 
           const p = cached_positions[cached_position_index];
           const symbol_a = get_symbol(p.whirlpool_data.token_mint_a);
