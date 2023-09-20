@@ -802,7 +802,7 @@
             notify_info("close position prepairing...");
             const payload = await build_close_position_tx(connection, wallet_pubkey, p, amounts);
             const tx = payload.tx;
-            tx.partialSign(...payload.signers);
+            if (payload.signers.length > 0) tx.partialSign(...payload.signers);
             const signed_tx = await wallet_provider.signTransaction(tx);
 
             notify_info("close position requesting...");
