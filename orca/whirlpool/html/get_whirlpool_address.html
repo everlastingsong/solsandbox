@@ -1,0 +1,152 @@
+<html>
+<head>
+    <title>Get Whirlpool Address</title>
+    <meta charset="utf-8" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.0/decimal.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <style>
+      body { font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: small; background-color: white; }
+      thead { background-color: #eeeeee; }
+      tr.above, tr.below { background-color: #ffcccc; }
+      a { text-decoration: none; }
+      a, a:hover, a:visited { color: inherit; }
+      td.empty-table { min-width: 500px; height: 100px; text-align: center; }
+    </style>
+
+    <!-- WHIRLPOOL SPECIFIC -->
+    <script>
+        const WHIRLPOOL_PROGRAM_ID = new solanaWeb3.PublicKey("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
+        const WHIRLPOOLS_CONFIG = new solanaWeb3.PublicKey("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ");
+
+        function get_whirlpool_pubkey(program, config, mintA, mintB, tickSpacing) {
+          const seeds = [
+            new TextEncoder().encode("whirlpool"),
+            config.toBytes(),
+            mintA.toBytes(),
+            mintB.toBytes(),
+            [tickSpacing % 256, Math.floor(tickSpacing / 256)] // LE 2 bytes
+          ];
+          const [pubkey, bump] = solanaWeb3.PublicKey.findProgramAddressSync(seeds, program);
+          return pubkey;
+        }
+
+        function order_mints(tokenX, tokenY) {
+          const bytesX = tokenX.toBytes();
+          const bytesY = tokenY.toBytes();
+
+          if (bytesX.length != 32) throw "tokenX is not a valid mint";
+          if (bytesY.length != 32) throw "tokenY is not a valid mint";
+
+          for (let i = 0; i < 32; i++) {
+            if (bytesX[i] < bytesY[i]) return [tokenX, tokenY];
+            if (bytesX[i] > bytesY[i]) return [tokenY, tokenX];
+          }
+
+          throw "tokenX and tokenY are the same mint";          
+        }
+
+    </script>
+
+    <!-- UI LOGIC -->
+    <script>
+      function derive() {
+        clear();
+
+        try {
+          const tokenX = new solanaWeb3.PublicKey($("#tokenX").val());
+          const tokenY = new solanaWeb3.PublicKey($("#tokenY").val());
+          const tickSpacing = parseInt($("#tickSpacing").val());
+
+          const [tokenA, tokenB] = order_mints(tokenX, tokenY);
+
+          const whirlpool = get_whirlpool_pubkey(WHIRLPOOL_PROGRAM_ID, WHIRLPOOLS_CONFIG, tokenA, tokenB, tickSpacing);
+
+          $("#pool").text(whirlpool.toBase58());
+          $("#program").text(WHIRLPOOL_PROGRAM_ID.toBase58());
+          $("#config").text(WHIRLPOOLS_CONFIG.toBase58());
+          $("#tokenA").text(tokenA.toBase58());
+          $("#tokenB").text(tokenB.toBase58());
+          $("#tickSpacingOut").text(tickSpacing);
+        } catch (e) {
+          $("#error").text(e);
+        }
+      }
+
+      function clear() {
+        $("#pool").text("");
+        $("#program").text("");
+        $("#config").text("");
+        $("#tokenA").text("");
+        $("#tokenB").text("");
+        $("#tickSpacingOut").text("");
+        $("#error").text("");
+      }
+    </script>
+</head>
+<body>
+
+<div style="font-size: larger">Get Whirlpool Address</div>
+<br>
+
+
+<div>well known mints cheat sheet</div>
+<br>
+<table border="0" style="font-size: x-small;">
+  <tr><td>SOL</td><td>So11111111111111111111111111111111111111112</td></tr>
+  <tr><td>USDC</td><td>EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</td></tr>
+  <tr><td>USDT</td><td>Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB</td></tr>
+  <tr><td>mSOL</td><td>mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So</td></tr>
+  <tr><td>stSOL</td><td>7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj</td></tr>
+  <tr><td>jitoSOL</td><td>J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn</td></tr>
+  <tr><td>bSOL</td><td>bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1</td></tr>
+  <tr><td>ORCA</td><td>orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE</td></tr>
+  <tr><td>BONK</td><td>DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263</td></tr>
+  <tr><td>SAMO</td><td>7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU</td></tr>
+  <tr><td>WBTC</td><td>3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh</td></tr>
+  <tr><td>whETH</td><td>7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs</td></tr>
+</table>
+
+<br>
+
+<div>input</div>
+<table border="1" style="font-size: x-small;">
+  <tr><th>tokenX mint</th><td><input id="tokenX" type="text" size="60"></td></tr>
+  <tr><th>tokenY mint</th><td><input id="tokenY" type="text" size="60"></td></tr>
+  <tr><th>feeRate (tickSpacing)</th><td>
+    <select id="tickSpacing">
+      <option value="1">ts=1, rate=0.01%</option>
+      <option value="2">ts=2, rate=0.02%</option>
+      <option value="4">ts=4, rate=0.04%</option>
+      <option value="8">ts=8, rate=0.05%</option>
+      <option value="16">ts=16, rate=0.16%</option>
+      <option value="32">ts=32, not used in Orca yet</option>
+      <option value="64">ts=64, rate=0.3%</option>
+      <option value="128">ts=128, rate=1.0%</option>
+      <option value="256">ts=256, rate=2.0%</option>
+    </select>
+  </td></tr>
+  <tr><td colspan="2"><button onclick="derive();">derive address</button></td></tr>
+</table>
+
+<br>
+<br>
+
+<div>result</div>
+<table border="1" style="font-size: x-small;">
+  <tr><th>pool</th><td id="pool"></td></tr>
+  <tr><th>program</th><td id="program"></td></tr>
+  <tr><th>config</th><td id="config"></td></tr>
+  <tr><th>tokenA</th><td id="tokenA"></td></tr>
+  <tr><th>tokenB</th><td id="tokenB"></td></tr>
+  <tr><th>tickSpacing</th><td id="tickSpacingOut"></td></tr>
+</table>
+
+<br>
+
+<div id="error" style="color: red;"></div>
+
+</body>
+</html>
