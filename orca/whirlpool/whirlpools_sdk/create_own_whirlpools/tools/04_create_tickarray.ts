@@ -1,7 +1,7 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, PDAUtil, WhirlpoolIx, PoolUtil, PriceMath, TickUtil, TICK_ARRAY_SIZE } from "@orca-so/whirlpools-sdk";
+import { PublicKey } from "@solana/web3.js";
+import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, PDAUtil, WhirlpoolIx, PriceMath, TickUtil, TICK_ARRAY_SIZE, IGNORE_CACHE } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder, PDA } from "@orca-so/common-sdk";
-import { AnchorProvider } from "@project-serum/anchor";
+import { AnchorProvider } from "@coral-xyz/anchor";
 import * as prompt from "prompt";
 import Decimal from "decimal.js";
 
@@ -54,9 +54,9 @@ async function main() {
     });
   }
 
-  const checkInitialized = await ctx.fetcher.listTickArrays(
+  const checkInitialized = await ctx.fetcher.getTickArrays(
     neighboringTickArrayInfos.map((info) => info.pda.publicKey),
-    true,
+    IGNORE_CACHE
   );
   checkInitialized.forEach((ta, i) => neighboringTickArrayInfos[i].isInitialized = !!ta);
 
