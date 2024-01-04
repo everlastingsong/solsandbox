@@ -1,73 +1,94 @@
 import { Buffer } from "buffer";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, TransactionInstruction, CompiledInstruction } from "@solana/web3.js";
 import { ORCA_WHIRLPOOL_PROGRAM_ID } from "@orca-so/whirlpools-sdk";
-import { BorshCoder, Idl } from "@project-serum/anchor";
-import { decodeTokenInstruction } from "@project-serum/token" // npm i @project-serum/token
+import { BorshCoder, Idl } from "@coral-xyz/anchor";
+import { DecodedTransferInstruction, TOKEN_PROGRAM_ID, decodeTransferInstruction } from "@solana/spl-token";
 import bs58 from "bs58";
 import * as prompt from "prompt";
 
 import whirlpool_idl from "@orca-so/whirlpools-sdk/dist/artifacts/whirlpool.json"
 
-const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
+const RPC_ENDPOINT_URL = process.env["RPC_ENDPOINT_URL"] || "";
 
-// decode token instruction based on @project-serum/token
-function decode_token_instruction(ix, accounts: PublicKey[]) {
-  const data = Buffer.from(bs58.decode(ix["data"]));
-  const keys = ix["accounts"].map((i) => { return {pubkey: accounts[i]} });
-  return decodeTokenInstruction({data, keys} as any);
+function decode_token_instruction(ix: CompiledInstruction, accounts: PublicKey[]): DecodedTransferInstruction {
+  const data = Buffer.from(bs58.decode(ix.data));
+
+  return decodeTransferInstruction(new TransactionInstruction({
+    programId: TOKEN_PROGRAM_ID,
+    data,
+    keys: [
+      {pubkey: accounts[ix.accounts[0]], isSigner: false, isWritable: true}, // source
+      {pubkey: accounts[ix.accounts[1]], isSigner: false, isWritable: true}, // dest
+      {pubkey: accounts[ix.accounts[2]], isSigner: true, isWritable: true},  // authority (owner)
+    ]
+  }));
 }
 
-function print_transfer_instruction(ix) {
+function print_transfer_instruction(transferIx: DecodedTransferInstruction) {
   console.log(
     "\ttoken instruction:",
-    ix.type,
-    ix.params["source"]?.toBase58(),
+    transferIx.keys.source.pubkey.toBase58(),
     ">>",
-    ix.params["destination"]?.toBase58(),
-    ix.params["amount"]?.toString()
+    transferIx.keys.destination.pubkey.toBase58(),
+    transferIx.data.amount.toString(), "(u64)"
   );
 }
 
 async function main() {
+  const connection = new Connection(RPC_ENDPOINT_URL, "confirmed");
+
   // prompt
   const {signature} = await prompt.get(["signature"]);
   console.log("signature:", signature);
 
   // get transaction
-  const connection = new Connection(RPC_ENDPOINT_URL, "confirmed");
+  const tx = await connection.getTransaction(signature, {commitment: "confirmed", maxSupportedTransactionVersion: 0});
 
-  const tx = await connection.getTransaction(signature);
   const txmsg = tx.transaction.message;
-  const instructions = txmsg.instructions;
-  const accounts = txmsg.accountKeys;
+  const instructions = txmsg.compiledInstructions;
+  const staticKeys = txmsg.staticAccountKeys;
+  const writableKeys = tx.meta.loadedAddresses.writable;
+  const readonlyKeys = tx.meta.loadedAddresses.readonly;
+  const accounts: PublicKey[] = [...staticKeys, ...writableKeys, ...readonlyKeys];
   const inner_instructions = tx.meta.innerInstructions || [];
 
   // flatten all instructions
-  const all_instructions = [];
+  const all_instructions: CompiledInstruction[] = [];
   instructions.forEach((ix, i) => {
-    all_instructions.push(ix);
+    all_instructions.push({
+        programIdIndex: ix.programIdIndex,
+        data: bs58.encode(ix.data),
+        accounts: ix.accountKeyIndexes,
+    });
     const inner = inner_instructions.find((v) => v.index == i);
     inner?.instructions.forEach((ix) => all_instructions.push(ix));
   });
 
-  // coder
+  // generate coder based on IDL
   const coder = new BorshCoder(whirlpool_idl as Idl);
 
   // check each instruction
-  for (let cursor=0; cursor < all_instructions.length; cursor++ ) {
+  for (let cursor=0; cursor < all_instructions.length; cursor++) {
     const ix = all_instructions[cursor];
     const program_id = accounts[ix.programIdIndex];
 
     if ( !program_id.equals(ORCA_WHIRLPOOL_PROGRAM_ID) ) continue;
 
     // data to u8array (encoded in base58)
-    const data_b58 = ix["data"];
+    const data_b58 = ix.data;
     // decode whirlpool instruction
     const decoded = coder.instruction.decode(data_b58, "base58");
 
     console.log("whirlpool instruction:", decoded.name);
 
     switch ( decoded.name ) {
+    case "twoHopSwap":
+      // 4 transfer instructions
+      print_transfer_instruction( decode_token_instruction(all_instructions[cursor+1], accounts) );
+      print_transfer_instruction( decode_token_instruction(all_instructions[cursor+2], accounts) );
+      print_transfer_instruction( decode_token_instruction(all_instructions[cursor+3], accounts) );
+      print_transfer_instruction( decode_token_instruction(all_instructions[cursor+4], accounts) );
+      break;
     case "swap":
     case "increaseLiquidity":
     case "decreaseLiquidity":
@@ -81,6 +102,8 @@ async function main() {
       // 1 transfer instruction
       print_transfer_instruction( decode_token_instruction(all_instructions[cursor+1], accounts) );
       break;
+    default:
+      // this code is just example, so don't handle other instructions
     }
   }
 }
@@ -98,13 +121,12 @@ prompt: signature:  57QKWfyNgv4dHmL97r18fkb7GZQsGQCuRRVkWTofGB1Z8sz5NB3gJ52Tzy4d
 signature: 57QKWfyNgv4dHmL97r18fkb7GZQsGQCuRRVkWTofGB1Z8sz5NB3gJ52Tzy4d4Wzwb4x2G3Krirsu33nTeSSB46Sp
 whirlpool instruction: updateFeesAndRewards
 whirlpool instruction: collectFees
-        token instruction: transfer 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> pxHaCG5Q85rgXRZ1tP1HWXoTdo9ZkuBLLMdXk17UNm9 3744
-        token instruction: transfer EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 3266
+        token instruction: 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> pxHaCG5Q85rgXRZ1tP1HWXoTdo9ZkuBLLMdXk17UNm9 3744 (u64)
+        token instruction: EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 3266 (u64)
 whirlpool instruction: collectReward
-        token instruction: transfer Cj8rY5MxWytpJfV6SyctqvVCmC2LAhio1CywBYRMFNRr >> 7B8yNHX62NLvRswD86ttbGcV5TYxUsDNxEg2ZRMZLPRt 44
+        token instruction: Cj8rY5MxWytpJfV6SyctqvVCmC2LAhio1CywBYRMFNRr >> 7B8yNHX62NLvRswD86ttbGcV5TYxUsDNxEg2ZRMZLPRt 44 (u64)
 whirlpool instruction: collectReward
-        token instruction: transfer 871e3q8rNc46dDLRwn3mpqkqDiiHK1ZcvkHEyYKQNfCv >> BHtKkmqVgA6WeVrZvJDQMsfrBfpzPeuxJW81M364dftH 767802
-
+        token instruction: 871e3q8rNc46dDLRwn3mpqkqDiiHK1ZcvkHEyYKQNfCv >> BHtKkmqVgA6WeVrZvJDQMsfrBfpzPeuxJW81M364dftH 767802 (u64)
 
 TRANSACTION SAMPLE2:
 https://solscan.io/tx/5ftZoC24tmvWYbtm5x8cg3SjgY7YBpJB8WQt4uNin9eF95UJ6BNeT4ahAWAr1SiQhmdyNxbywe7DHgsKHfvdCTSa
@@ -115,30 +137,27 @@ prompt: signature:  5ftZoC24tmvWYbtm5x8cg3SjgY7YBpJB8WQt4uNin9eF95UJ6BNeT4ahAWAr
 signature: 5ftZoC24tmvWYbtm5x8cg3SjgY7YBpJB8WQt4uNin9eF95UJ6BNeT4ahAWAr1SiQhmdyNxbywe7DHgsKHfvdCTSa
 whirlpool instruction: updateFeesAndRewards
 whirlpool instruction: collectFees
-        token instruction: transfer 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> 2mjbxoWYamLt4gXRdVvJL5ooFSSvZ2dWEiUBWk2E6BmZ 3
-        token instruction: transfer EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 0
+        token instruction: 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> 2mjbxoWYamLt4gXRdVvJL5ooFSSvZ2dWEiUBWk2E6BmZ 3 (u64)
+        token instruction: EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 0 (u64)
 whirlpool instruction: collectReward
-        token instruction: transfer Cj8rY5MxWytpJfV6SyctqvVCmC2LAhio1CywBYRMFNRr >> 7B8yNHX62NLvRswD86ttbGcV5TYxUsDNxEg2ZRMZLPRt 0
+        token instruction: Cj8rY5MxWytpJfV6SyctqvVCmC2LAhio1CywBYRMFNRr >> 7B8yNHX62NLvRswD86ttbGcV5TYxUsDNxEg2ZRMZLPRt 0 (u64)
 whirlpool instruction: collectReward
-        token instruction: transfer 871e3q8rNc46dDLRwn3mpqkqDiiHK1ZcvkHEyYKQNfCv >> BHtKkmqVgA6WeVrZvJDQMsfrBfpzPeuxJW81M364dftH 372
+        token instruction: 871e3q8rNc46dDLRwn3mpqkqDiiHK1ZcvkHEyYKQNfCv >> BHtKkmqVgA6WeVrZvJDQMsfrBfpzPeuxJW81M364dftH 372 (u64)
 whirlpool instruction: decreaseLiquidity
-        token instruction: transfer 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> 2mjbxoWYamLt4gXRdVvJL5ooFSSvZ2dWEiUBWk2E6BmZ 13195148
-        token instruction: transfer EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 5888809
-whirlpool instruction: closePosition
-
+        token instruction: 2gG2nqzdqDnFRio8ttYyCkesTbfqDcbQLrv19n4weuK6 >> 2mjbxoWYamLt4gXRdVvJL5ooFSSvZ2dWEiUBWk2E6BmZ 13195148 (u64)
+        token instruction: EWWSKcyMy2cF1RBmcQMPyN8SafyxoUFzmzWsAqReNmQc >> DAeMvh1TvrWkCT4AAvBqTwyVLz5z92wBVtvDWbehRKAo 5888809 (u64)
 
 TRANSACTION SAMPLE3:
-https://solscan.io/tx/Rh8cKy8P8v7KMqkShSonUYZb7NKeDq6MkjyeZDjE9no1BdCN2ELuVSwN5TPmdnsFGAHVzXsewKUjyG5YrUVED56
+https://solscan.io/tx/2v6HxAYfDZjB5hjoU2SvKF8hmUFLsxLrzjRE7B9P1gGjDpn5NnqFCaduCbF7Nxzg2LfEaD1w4oyT5LoNyfd5jRXL
 
 OUTPUT SAMPLE3:
 $ ts-node src/84c_parse_whirlpool_tx_with_inner_ix.ts 
-prompt: signature:  Rh8cKy8P8v7KMqkShSonUYZb7NKeDq6MkjyeZDjE9no1BdCN2ELuVSwN5TPmdnsFGAHVzXsewKUjyG5YrUVED56
-signature: Rh8cKy8P8v7KMqkShSonUYZb7NKeDq6MkjyeZDjE9no1BdCN2ELuVSwN5TPmdnsFGAHVzXsewKUjyG5YrUVED56
-whirlpool instruction: swap
-        token instruction: transfer GrjwegH3qhmSfKxtgqxLmNaWxqTah6scBEqMeNgZfcA3 >> 9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p 5000000000
-        token instruction: transfer BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe >> 5RxrCig1GSvZGCcYRA42tYfAqt9ey3gc7813m1zcvDR4 158308811
-whirlpool instruction: swap
-        token instruction: transfer Ci3FCwMdtaD3UogVdw9d8CLrgwNaFR4yfV5Ec5kAztMv >> 71SPVh1eUFC6bZgS6dMxRVsN2h1Y77p9kgb1E3DuWSv4 4699197832
-        token instruction: transfer 4iQge2PC2YCT2Dop3cbs33QdEyZtkzKfyYGh2J8idcye >> GrjwegH3qhmSfKxtgqxLmNaWxqTah6scBEqMeNgZfcA3 5000481180
+prompt: signature:  2v6HxAYfDZjB5hjoU2SvKF8hmUFLsxLrzjRE7B9P1gGjDpn5NnqFCaduCbF7Nxzg2LfEaD1w4oyT5LoNyfd5jRXL
+signature: 2v6HxAYfDZjB5hjoU2SvKF8hmUFLsxLrzjRE7B9P1gGjDpn5NnqFCaduCbF7Nxzg2LfEaD1w4oyT5LoNyfd5jRXL
+whirlpool instruction: twoHopSwap
+        token instruction: 7Q6tDKDY6fFaS8i9TUBofQSmTcNsQPF72dE7HBoK6ZRe >> HDdh3tmW14yvRVQDJ5UfpatosedTdTamz8Swoin4yS7 10000000 (u64)
+        token instruction: 7zvUKaEeGAcKAKqABmZHsDH3kTHfjwrhWBT4BvJtSCyV >> 9NxwyjcHsSUL8Y45vdogjfp61KyoLLnoB2QJEcRqSNrp 109562650 (u64)
+        token instruction: 9NxwyjcHsSUL8Y45vdogjfp61KyoLLnoB2QJEcRqSNrp >> 7UdFF2he8LzFXgRkNRi1whPsLRJhC1xFzFpkSy7XscoX 109562650 (u64)
+        token instruction: GKHTvUWKvLLcUUYcbbP4V89RFoFpRViJ4ajXunHK328q >> 8ewGWrSjhb9gG37TF5tzyw1vM1wMP1AenYuGEhQZSrFF 37664586814 (u64)
 
 */
