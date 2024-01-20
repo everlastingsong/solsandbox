@@ -1,16 +1,25 @@
-import { WhirlpoolContext, AccountFetcher, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient } from "@orca-so/whirlpools-sdk";
-const { Wallet } = require("@project-serum/anchor"); // v0.20.1 bug, import for Wallet is not possible
+import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient } from "@orca-so/whirlpools-sdk";
+import { Wallet } from "@coral-xyz/anchor";
 import { Keypair, Connection } from "@solana/web3.js";
 
-const RPC_ENDPOINT_URL="https://ssc-dao.genesysgo.net"
+// bash$ ts-node this_script.ts
+
+// you need to use your RPC endpoint (Public RPC is just for example)
+const RPC_ENDPOINT_URL= "https://api.mainnet-beta.solana.com";
 const COMMITMENT = "confirmed";
 
-const connection = new Connection(RPC_ENDPOINT_URL, COMMITMENT);
-const wallet = new Wallet(Keypair.generate()); // dummy
+async function main() {
+  const connection = new Connection(RPC_ENDPOINT_URL, COMMITMENT);
 
-const ctx = WhirlpoolContext.from(connection, wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
-const fetcher = new AccountFetcher(ctx.connection);
-const client = buildWhirlpoolClient(ctx, fetcher);
+  // create dummy wallet with temporary keypair
+  const wallet = new Wallet(Keypair.generate());
+  
+  const ctx = WhirlpoolContext.from(connection, wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
+  
+  console.log("connection endpoint", ctx.connection.rpcEndpoint);
+  console.log("wallet", ctx.wallet.publicKey.toBase58());
+}
 
-console.log("connection endpoint", ctx.connection.rpcEndpoint);
-console.log("wallet", ctx.wallet.publicKey.toBase58());
+main();
