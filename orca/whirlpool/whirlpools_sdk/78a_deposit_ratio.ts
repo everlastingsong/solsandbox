@@ -1,7 +1,6 @@
 import { PublicKey, Connection, Keypair } from "@solana/web3.js";
-import { MathUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { WhirlpoolContext, buildWhirlpoolClient, PriceMath, ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG, PDAUtil, increaseLiquidityQuoteByInputToken } from "@orca-so/whirlpools-sdk";
-import { Wallet } from "@project-serum/anchor";
+import { WhirlpoolContext, buildWhirlpoolClient, PriceMath, ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG, PDAUtil, increaseLiquidityQuoteByInputToken, IGNORE_CACHE } from "@orca-so/whirlpools-sdk";
+import { Wallet } from "@coral-xyz/anchor";
 import Decimal from "decimal.js"
 
 const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
@@ -12,7 +11,7 @@ async function main() {
   
   const dummy_wallet = new Wallet(Keypair.generate());
   const ctx = WhirlpoolContext.from(connection, dummy_wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
-  const client = buildWhirlpoolClient(ctx);
+  const fetcher = ctx.fetcher;
 
   // tokens
   const SOL = {mint: new PublicKey("So11111111111111111111111111111111111111112"), decimals: 9};
@@ -33,8 +32,8 @@ async function main() {
   const tick_spacing = TICK_SPACING_STANDARD;
 
   // deposit range condition
-  const lower_price = new Decimal("25");
-  const upper_price = new Decimal("40");
+  const lower_price = new Decimal("90");
+  const upper_price = new Decimal("150");
   const lower_tick_index = PriceMath.priceToInitializableTickIndex(lower_price, token_a.decimals, token_b.decimals, tick_spacing);
   const upper_tick_index = PriceMath.priceToInitializableTickIndex(upper_price, token_a.decimals, token_b.decimals, tick_spacing);
   console.log(
@@ -47,19 +46,20 @@ async function main() {
   const whirlpool_key = PDAUtil.getWhirlpool(
     ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG,
     token_a.mint, token_b.mint, tick_spacing).publicKey;
-  const whirlpool = await client.getPool(whirlpool_key);
+  const whirlpool_data = await fetcher.getPool(whirlpool_key, IGNORE_CACHE);
 
   // get sqrt prices
-  const price = PriceMath.sqrtPriceX64ToPrice(whirlpool.getData().sqrtPrice, token_a.decimals, token_b.decimals).toNumber()
+  const price = PriceMath.sqrtPriceX64ToPrice(whirlpool_data.sqrtPrice, token_a.decimals, token_b.decimals).toNumber()
   const lower_sqrt_price = Math.sqrt(PriceMath.tickIndexToPrice(lower_tick_index, token_a.decimals, token_b.decimals).toNumber());
   const upper_sqrt_price = Math.sqrt(PriceMath.tickIndexToPrice(upper_tick_index, token_a.decimals, token_b.decimals).toNumber());
-  const current_sqrt_price = Math.min(Math.max(lower_sqrt_price, Math.sqrt(price)), upper_sqrt_price);
+  const clamped_current_sqrt_price = Math.min(Math.max(lower_sqrt_price, Math.sqrt(price)), upper_sqrt_price);
 
   // calc ratio (L: liquidity)
   // deposit_a = L/current_sqrt_price - L/upper_sqrt_price
   // deposit_b = L*current_sqrt_price - L*lower_sqrt_price
-  const deposit_a = 1/current_sqrt_price - 1/upper_sqrt_price;
-  const deposit_b = current_sqrt_price - lower_sqrt_price;
+  const deposit_a = 1/clamped_current_sqrt_price - 1/upper_sqrt_price;
+  const deposit_b = clamped_current_sqrt_price - lower_sqrt_price;
+
   const deposit_a_value_in_b = deposit_a * price;
   const deposit_b_value_in_b = deposit_b;
   const total_value_in_b = deposit_a_value_in_b + deposit_b_value_in_b;
@@ -67,7 +67,7 @@ async function main() {
   const ratio_a = deposit_a_value_in_b / total_value_in_b * 100;
   const ratio_b = deposit_b_value_in_b / total_value_in_b * 100;
 
-  const round_d1 = (n) => Math.round(n * 10)/10;
+  const round_d1 = (n: number) => Math.round(n * 10)/10;
   console.log(
     "Deposit ratio:",
     "\n  SOL  deposit:", round_d1(ratio_a), "%",
@@ -84,10 +84,10 @@ SAMPLE OUTPUT
 $ ts-node src/78a_deposit_ratio.ts 
 connection endpoint https://api.mainnet-beta.solana.com
 Range: 
-  Lower: 25.066682 
-  Upper: 40.250237
+  Lower: 90.150057 
+  Upper: 150.422799
 Deposit ratio: 
-  SOL  deposit: 42.2 % 
-  USDC deposit: 57.8 %
-
+  SOL  deposit: 28.6 % 
+  USDC deposit: 71.4 %
+  
 */
