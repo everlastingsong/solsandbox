@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
 import { WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, PDAUtil, WhirlpoolIx, PriceMath, TickUtil, TICK_ARRAY_SIZE, IGNORE_CACHE } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder, PDA } from "@orca-so/common-sdk";
 import { AnchorProvider } from "@coral-xyz/anchor";
@@ -24,6 +24,11 @@ async function main() {
 
   const whirlpoolPubkey = new PublicKey(result.whirlpoolPubkey);
   const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey);
+  if (!whirlpool) {
+    console.log("whirlpool not found");
+    return;
+  }
+
   const mintA = await ctx.fetcher.getMintInfo(whirlpool.tokenMintA);
   const mintB = await ctx.fetcher.getMintInfo(whirlpool.tokenMintB);
   const tickSpacing = whirlpool.tickSpacing;
@@ -34,10 +39,21 @@ async function main() {
     startPrice: Decimal,
     endPrice: Decimal,
     isCurrent: boolean,
+    isFullRange: boolean,
     isInitialized?: boolean,
   }
 
-  const neighboringTickArrayInfos: TickArrayInfo[] = [];
+  const tickArrayInfos: TickArrayInfo[] = [];
+  const [minTickIndex, maxTickIndex] = TickUtil.getFullRangeTickIndex(tickSpacing);
+  tickArrayInfos.push({
+    pda: PDAUtil.getTickArrayFromTickIndex(minTickIndex, tickSpacing, whirlpoolPubkey, ctx.program.programId),
+    startTickIndex: TickUtil.getStartTickIndex(minTickIndex, tickSpacing),
+    startPrice: PriceMath.tickIndexToPrice(minTickIndex, mintA.decimals, mintB.decimals),
+    endPrice: PriceMath.tickIndexToPrice(Math.ceil(minTickIndex / (tickSpacing * TICK_ARRAY_SIZE))*(tickSpacing * TICK_ARRAY_SIZE), mintA.decimals, mintB.decimals),
+    isCurrent: false,
+    isFullRange: true,
+  });
+
   for (let offset=-6; offset<=+6; offset++) {
     const startTickIndex = TickUtil.getStartTickIndex(whirlpool.tickCurrentIndex, tickSpacing, offset);
     const pda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPubkey, startTickIndex);
@@ -45,33 +61,44 @@ async function main() {
     const startPrice = PriceMath.tickIndexToPrice(startTickIndex, mintA.decimals, mintB.decimals);
     const endPrice = PriceMath.tickIndexToPrice(endTickIndex, mintA.decimals, mintB.decimals);
 
-    neighboringTickArrayInfos.push({
+    tickArrayInfos.push({
       pda,
       startTickIndex,
       startPrice,
       endPrice,
       isCurrent: offset == 0,
+      isFullRange: false,
     });
   }
 
+  tickArrayInfos.push({
+    pda: PDAUtil.getTickArrayFromTickIndex(maxTickIndex, tickSpacing, whirlpoolPubkey, ctx.program.programId),
+    startTickIndex: TickUtil.getStartTickIndex(maxTickIndex, tickSpacing),
+    startPrice: PriceMath.tickIndexToPrice(Math.floor(maxTickIndex / (tickSpacing * TICK_ARRAY_SIZE))*(tickSpacing * TICK_ARRAY_SIZE), mintA.decimals, mintB.decimals),
+    endPrice: PriceMath.tickIndexToPrice(maxTickIndex, mintA.decimals, mintB.decimals),
+    isCurrent: false,
+    isFullRange: true,
+  });
+
   const checkInitialized = await ctx.fetcher.getTickArrays(
-    neighboringTickArrayInfos.map((info) => info.pda.publicKey),
+    tickArrayInfos.map((info) => info.pda.publicKey),
     IGNORE_CACHE
   );
-  checkInitialized.forEach((ta, i) => neighboringTickArrayInfos[i].isInitialized = !!ta);
+  checkInitialized.forEach((ta, i) => tickArrayInfos[i].isInitialized = !!ta);
 
-  console.log("neighring tickarrays...");
-  neighboringTickArrayInfos.forEach((ta) => console.log(
+  console.log("neighring tickarrays & fullrange tickarrays...");
+  tickArrayInfos.forEach((ta) => console.log(
     ta.isCurrent ? ">>" : "  ",
     ta.pda.publicKey.toBase58().padEnd(45, " "),
     ta.isInitialized ? "    initialized" : "NOT INITIALIZED",
     "start", ta.startTickIndex.toString().padStart(10, " "),
-    "covered range", ta.startPrice.toFixed(mintB.decimals), "-", ta.endPrice.toFixed(mintB.decimals),
+    "covered range", ta.startPrice.toSignificantDigits(6), "-", ta.endPrice.toSignificantDigits(6),
+    ta.isFullRange ? "(FULL)" : ""
   ));
 
   const select = await prompt.get(["tickArrayPubkey"]);
   const tickArrayPubkey = new PublicKey(select.tickArrayPubkey);
-  const which = neighboringTickArrayInfos.filter((ta) => ta.pda.publicKey.equals(tickArrayPubkey))[0];
+  const which = tickArrayInfos.filter((ta) => ta.pda.publicKey.equals(tickArrayPubkey))[0];
 
   const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
   builder.addInstruction(WhirlpoolIx.initTickArrayIx(
@@ -83,6 +110,28 @@ async function main() {
       tickArrayPda: which.pda,
     }));
   
+  // Create instructions to add priority fee
+  const estimatedComputeUnits = 300_000; // ~ 1_400_000 CU
+  const additionalFeeInLamports = 5_000; // 0.000005 SOL
+
+  const setComputeUnitPriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+    // Specify how many micro lamports to pay in addition for 1 CU
+    microLamports: Math.floor((additionalFeeInLamports * 1_000_000) / estimatedComputeUnits),
+  });
+  const setComputeUnitLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+    // To determine the Solana network fee at the start of the transaction, explicitly specify CU
+    // If not specified, it will be calculated automatically. But it is almost always specified
+    // because even if it is estimated to be large, it will not be refunded
+    units: estimatedComputeUnits,
+  });
+
+  // Add instructions to the beginning of the transaction
+  builder.prependInstruction({
+    instructions: [setComputeUnitLimitIx, setComputeUnitPriceIx],
+    cleanupInstructions: [],
+    signers: [],
+  });
+    
   const sig = await builder.buildAndExecute();
   console.log("tx:", sig);
   console.log("initialized tickArray address:", tickArrayPubkey.toBase58());
