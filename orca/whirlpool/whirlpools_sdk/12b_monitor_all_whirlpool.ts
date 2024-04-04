@@ -1,13 +1,15 @@
-import { Connection, AccountInfo, Context, PublicKey, Keypair, KeyedAccountInfo } from "@solana/web3.js";
+// tested with @orca-so/whirlpools-sdk v0.11.7
+
+import { Connection, Context, PublicKey, Keypair, KeyedAccountInfo } from "@solana/web3.js";
 import {
-    WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
-    PriceMath, WhirlpoolData, ParsableWhirlpool
+    WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID,
+    PriceMath, WhirlpoolData, ParsableWhirlpool, getAccountSize, AccountName, PREFER_CACHE
 } from "@orca-so/whirlpools-sdk";
-import { BN, Wallet } from "@project-serum/anchor";
+import { BN, Wallet } from "@coral-xyz/anchor";
 
 interface WhirlpoolMonitorCallback { (slot: number, whirlpool_pubkey: PublicKey, whirlpool_data: WhirlpoolData): void; };
 
-const WHIRLPOOL_ACCOUNT_SIZE = 653;
+const WHIRLPOOL_ACCOUNT_SIZE = getAccountSize(AccountName.Whirlpool);
 
 class AllWhirlpoolMonitor {
   private connection: Connection;
@@ -52,14 +54,14 @@ class AllWhirlpoolMonitor {
 
   private update_whirlpool(keyed_account_info: KeyedAccountInfo, context: Context) {
     const whirlpool_pubkey = keyed_account_info.accountId;
-    const whirlpool_data = ParsableWhirlpool.parse(keyed_account_info.accountInfo.data);
+    const whirlpool_data = ParsableWhirlpool.parse(keyed_account_info.accountId, keyed_account_info.accountInfo);
     this.updated(context.slot, whirlpool_pubkey, whirlpool_data);
   }
 }
 
 
 async function main() {
-  const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
+  const RPC_ENDPOINT_URL = process.env["RPC_ENDPOINT_URL"];
   const commitment = "confirmed";
 
   const connection = new Connection(RPC_ENDPOINT_URL, commitment);
@@ -68,8 +70,8 @@ async function main() {
   const fetcher = ctx.fetcher;
 
   const all_whirlpool_monitor = new AllWhirlpoolMonitor(connection, ORCA_WHIRLPOOL_PROGRAM_ID, async (slot, whirlpool_pubkey, whirlpool_data) => {
-    const token_a = await fetcher.getMintInfo(whirlpool_data.tokenMintA, false);
-    const token_b = await fetcher.getMintInfo(whirlpool_data.tokenMintB, false);
+    const token_a = await fetcher.getMintInfo(whirlpool_data.tokenMintA, PREFER_CACHE); // decimals is constant, so cacheable
+    const token_b = await fetcher.getMintInfo(whirlpool_data.tokenMintB, PREFER_CACHE); // decimals is constant, so cacheable
     const sqrt_price = whirlpool_data.sqrtPrice.toString();
     const price = PriceMath.sqrtPriceX64ToPrice(
       whirlpool_data.sqrtPrice,
