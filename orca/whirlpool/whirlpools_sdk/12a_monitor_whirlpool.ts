@@ -1,9 +1,11 @@
+// tested with @orca-so/whirlpools-sdk v0.11.7
+
 import { Connection, AccountInfo, Context, PublicKey, Keypair } from "@solana/web3.js";
 import {
     WhirlpoolContext, ORCA_WHIRLPOOL_PROGRAM_ID, buildWhirlpoolClient,
     PriceMath, WhirlpoolData, ParsableWhirlpool
 } from "@orca-so/whirlpools-sdk";
-import { BN, Wallet } from "@project-serum/anchor";
+import { BN, Wallet } from "@coral-xyz/anchor";
 
 interface WhirlpoolMonitorCallback { (slot: number, whirlpool_data: WhirlpoolData): void; };
 
@@ -40,7 +42,7 @@ class WhirlpoolMonitor {
   }
 
   private update_whirlpool(account_info: AccountInfo<Buffer>, context: Context) {
-    const whirlpool_data = ParsableWhirlpool.parse(account_info.data);
+    const whirlpool_data = ParsableWhirlpool.parse(this.whirlpool, account_info);
     this.whirlpool_data = whirlpool_data;
     this.whirlpool_update_slot = context.slot;
     this.updated();
@@ -49,7 +51,7 @@ class WhirlpoolMonitor {
 
 
 async function main() {
-  const RPC_ENDPOINT_URL = "https://api.mainnet-beta.solana.com";
+  const RPC_ENDPOINT_URL = process.env["RPC_ENDPOINT_URL"];
   const commitment = "confirmed";
 
   const connection = new Connection(RPC_ENDPOINT_URL, commitment);
@@ -57,7 +59,7 @@ async function main() {
   const ctx = WhirlpoolContext.from(connection, dummy_wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
   const client = buildWhirlpoolClient(ctx);
 
-  const SOL_USDC_WHIRLPOOL = new PublicKey("7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm");  // ts = 8
+  const SOL_USDC_WHIRLPOOL = new PublicKey("FpCMFDFGYotvufJ7HrFHsWEiiQCGbkLCtwHiDnh7o28Q");  // ts = 2
   const whirlpool = await client.getPool(SOL_USDC_WHIRLPOOL);
   const token_a = whirlpool.getTokenAInfo();
   const token_b = whirlpool.getTokenBInfo();
@@ -75,7 +77,7 @@ async function main() {
   whirlpool_monitor.start_monitoring();
 
   // sleep...
-  const sleep_sec = 30;
+  const sleep_sec = 60;
   await new Promise(resolve => setTimeout(resolve, sleep_sec*1000));
 
   console.log("stop monitoring...");
