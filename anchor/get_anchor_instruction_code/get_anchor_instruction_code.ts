@@ -1,3 +1,9 @@
+// We can use unix commands without TS environment
+//
+// $ echo -n global:open_position_with_metadata | sha256sum | cut -c 1-16
+// f21d86303a6e0e3c
+//
+
 import { Buffer } from "buffer";
 import { sha256 } from "js-sha256";
 import { snakeCase } from "snake-case";
