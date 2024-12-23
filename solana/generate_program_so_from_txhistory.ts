@@ -1,4 +1,4 @@
-import { Connection, PublicKey, GetVersionedTransactionConfig, TransactionResponse, SystemProgram, SystemInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, GetVersionedTransactionConfig, TransactionResponse, SystemProgram, SystemInstruction, ComputeBudgetProgram } from "@solana/web3.js";
 import * as prompt from "prompt";
 import base58 from "bs58";
 import fs from "fs";
@@ -37,8 +37,8 @@ async function getUpgradableProgramDataAccountSize(connection: Connection, progr
 
 function isInitializeBufferTransaction(tx: TransactionResponse, bufferAccountPubkey: PublicKey): boolean {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   if (instructions.length !== 2) return false;
 
@@ -59,8 +59,8 @@ function isInitializeBufferTransaction(tx: TransactionResponse, bufferAccountPub
 
 function isWriteTransaction(tx: TransactionResponse, bufferAccountPubkey: PublicKey): boolean {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   if (instructions.length !== 1) return false;
 
@@ -75,8 +75,8 @@ function isWriteTransaction(tx: TransactionResponse, bufferAccountPubkey: Public
 
 function isUpgradeTransaction(tx: TransactionResponse, bufferAccountPubkey?: PublicKey): boolean {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   if (instructions.length !== 1) return false;
 
@@ -91,8 +91,8 @@ function isUpgradeTransaction(tx: TransactionResponse, bufferAccountPubkey?: Pub
 
 function isDeployWithMaxDataLenTransaction(tx: TransactionResponse, bufferAccountPubkey?: PublicKey): boolean {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   if (instructions.length !== 2) return false;
 
@@ -107,8 +107,8 @@ function isDeployWithMaxDataLenTransaction(tx: TransactionResponse, bufferAccoun
 
 function isSetAuthorityTransaction(tx: TransactionResponse, bufferAccountPubkey: PublicKey): boolean {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   if (instructions.length !== 1) return false;
 
@@ -123,8 +123,8 @@ function isSetAuthorityTransaction(tx: TransactionResponse, bufferAccountPubkey:
 
 function getAllocatedDataSize(tx: TransactionResponse): number {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   const createAccountIx = SystemInstruction.decodeCreateAccount({
     programId: SystemProgram.programId,
@@ -146,7 +146,8 @@ type WritePayload = {
 
 function getWritePayload(tx: TransactionResponse): WritePayload {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
+  const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
 
   // instruction code: u32
   // offset: ui32
@@ -164,15 +165,15 @@ function getWritePayload(tx: TransactionResponse): WritePayload {
 
 function getBufferAccountFromUpgradeTransaction(tx: TransactionResponse): PublicKey {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
   return keys[instructions[0].accounts[2]];
 }
 
 function getBufferAccountFromDeployWithMaxDataLenTransaction(tx: TransactionResponse): PublicKey {
   const transaction = tx.transaction;
-  const instructions = transaction.message.instructions;
   const keys = transaction.message.accountKeys;
+  const instructions = transaction.message.instructions.filter((tx) => !keys[tx.programIdIndex].equals(ComputeBudgetProgram.programId));
   return keys[instructions[1].accounts[3]];
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +182,7 @@ const RPC_ENDPOINT_URL = process.env["RPC_ENDPOINT_URL"];
 
 const TRANSACTION_HISTORY_LIMIT = 1000;
 const MAX_TRANSACTION_HISTORY_FETCH_COUNT = 10; // max transaction number: 1000 * 10 = 10000
-const TRANSACTION_FETCH_CHUNK_SIZE = 25;
+const TRANSACTION_FETCH_CHUNK_SIZE = 25 * 2;
 
 //const INITIALIZE_BUFFER_SAMPLE = "4vzG5qUCqMQXXhKCSok4fjXnLctNQXzNtotVfN6EimpKyDbngAJHGnY1wEoKohjFqVcUHdVPNSD8TwEgcuiQrkSN";
 //const WRITE_SAMPLE = "PNQxq8XSJWYxH19EqWc7HCjKdMYa8e26m8ZEAinWTuCCMcMt16yZau45zgZQ32LmWssJCMH5LkmyZaJwRApgQ1d";
@@ -225,7 +226,7 @@ async function main() {
   let allFetched = false;
   let before = undefined;
   for (let i = 0; i < MAX_TRANSACTION_HISTORY_FETCH_COUNT; i++) {
-    const result = await connection.getConfirmedSignaturesForAddress2(bufferAccountPubkey, {
+    const result = await connection.getSignaturesForAddress(bufferAccountPubkey, {
       limit: TRANSACTION_HISTORY_LIMIT,
       before,
     });
@@ -294,8 +295,8 @@ async function main() {
       console.log("\tset authority");
     }
     else {
-      console.log("unknown transaction", signature);
-      break;
+      // initialize buffer uses much SOL, so scammers may send tiny SOL to the buffer account
+      console.log("ignore unknown transaction", signature);
     }
   }
 }
